@@ -10,37 +10,6 @@
 # without touching anything here.
 
 services:
-  # Renders bifrost/config.template.json into bifrost/config.json with values from .env.
-  # This exists so no tenant id, resource URL, or private key is ever committed: the
-  # template holds placeholders, .env holds the real values and is gitignored.
-  config:
-    image: bhgedigital/envsubst:latest
-    volumes:
-      - ./bifrost:/work
-    working_dir: /work
-    environment:
-      OKTA_DOMAIN: ${OKTA_DOMAIN:?set OKTA_DOMAIN in .env}
-      OKTA_AGENT_ID: ${OKTA_AGENT_ID:?set OKTA_AGENT_ID in .env}
-      OKTA_AGENT_RESOURCE_URL: ${OKTA_AGENT_RESOURCE_URL:?set OKTA_AGENT_RESOURCE_URL in .env}
-      OKTA_AGENT_PRIVATE_KEY_JWK: ${OKTA_AGENT_PRIVATE_KEY_JWK:?set OKTA_AGENT_PRIVATE_KEY_JWK in .env}
-      OKTA_READ_LANE_AS_ID: ${OKTA_READ_LANE_AS_ID:?set OKTA_READ_LANE_AS_ID in .env}
-      OKTA_COMMAND_LANE_AS_ID: ${OKTA_COMMAND_LANE_AS_ID:?set OKTA_COMMAND_LANE_AS_ID in .env}
-      FLEETOPS_READ_RESOURCE_URL: ${FLEETOPS_READ_RESOURCE_URL:?set FLEETOPS_READ_RESOURCE_URL in .env}
-      FLEETOPS_COMMAND_RESOURCE_URL: ${FLEETOPS_COMMAND_RESOURCE_URL:?set FLEETOPS_COMMAND_RESOURCE_URL in .env}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        envsubst < config.template.json > config.json
-        # Fail loudly rather than handing Bifrost a config with unsubstituted variables,
-        # which would otherwise surface as a confusing plugin Init error.
-        if grep -q '\$\{' config.json; then
-          echo "ERROR: config.json still contains unsubstituted variables:" >&2
-          grep -o '\$\{[A-Z_]*\}' config.json | sort -u >&2
-          exit 1
-        fi
-        echo "rendered bifrost/config.json"
-
   fleetops:
     build:
       context: ./server
@@ -51,24 +20,45 @@ services:
       FLEETOPS_ISSUERS: ${FLEETOPS_ISSUERS:?set FLEETOPS_ISSUERS in .env}
       FLEETOPS_AUDIENCES: ${FLEETOPS_AUDIENCES:?set FLEETOPS_AUDIENCES in .env}
       FLEETOPS_ADDR: ":8080"
+      # Only used on networks that intercept TLS. Empty means the image's own trust
+      # store, which is what you want everywhere else. See certs/README.md.
+      #
+      # Driven by EXTRA_CA_BUNDLE rather than SSL_CERT_FILE on purpose. Compose gives the
+      # host shell precedence over .env, and SSL_CERT_FILE is often already exported on a
+      # developer machine, which would silently override this with a host path that does
+      # not exist inside the container. The symptom is an unknown-authority TLS error that
+      # looks exactly like having set nothing at all.
+      SSL_CERT_FILE: ${EXTRA_CA_BUNDLE:-}
+    volumes:
+      - ./certs:/certs:ro
     expose:
       - "8080"
     restart: unless-stopped
 
   bifrost:
     image: ${BIFROST_IMAGE:-maximhq/bifrost:latest}
+    environment:
+      # The plugin calls Okta over HTTPS from inside this container, so if your network
+      # re-signs TLS this must point at a bundle containing that root. See certs/README.md.
+      # EXTRA_CA_BUNDLE rather than SSL_CERT_FILE for the reason given on the service above.
+      SSL_CERT_FILE: ${EXTRA_CA_BUNDLE:-}
     depends_on:
-      config:
-        condition: service_completed_successfully
       fleetops:
         condition: service_started
     ports:
       - "8080:8080"
     volumes:
-      - ./bifrost/config.json:/app/config/config.json:ro
+      # Must be $APP_DIR/config.json, and APP_DIR defaults to /app/data. Mounting it
+      # anywhere else means Bifrost silently starts with defaults and your plugin never
+      # loads: the only hint is one info line saying the config file was not found.
+      - ./bifrost/config.json:/app/data/config.json:ro
       # Built by the plugin repo: make plugin PLATFORM=linux/amd64
       - ../okta-bifrost-plugin/bin:/etc/bifrost/plugins:ro
       - bifrost-data:/app/data
+      - ./certs:/certs:ro
+      # The agent's private key, read directly by the plugin. Kept out of the config so
+      # the config is not itself a secret. See secrets/README.md.
+      - ./secrets:/secrets:ro
     restart: unless-stopped
 
 volumes:

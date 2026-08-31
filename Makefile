@@ -15,7 +15,7 @@ COMPOSE    ?= docker compose
 .DEFAULT_GOAL := help
 
 .PHONY: up
-up: plugin ## Build the plugin, render the config, start everything
+up: plugin config ## Build the plugin, render the config, start everything
 	$(COMPOSE) up -d --build
 	@echo
 	@echo "bifrost is on http://localhost:8080"
@@ -45,13 +45,38 @@ logs: ## Follow gateway and server logs
 
 .PHONY: config
 config: ## Render bifrost/config.json from .env without starting anything
-	$(COMPOSE) run --rm config
+	./scripts/render-config.sh
 
 .PHONY: check
 check: ## Build and vet the Fleet Ops server
 	docker run --rm --platform $(PLATFORM) -v "$(CURDIR)/server":/src -w /src golang:1.27 \
 		sh -c 'gofmt -l . && go vet ./... && go build ./...'
 	@echo "server ok"
+
+# --- the demo, no gateway involved -----------------------------------------------------
+# These run the real exchange against your tenant and print what came back. They call the
+# plugin's own exchange code, so a passing run here is evidence the plugin's exchange
+# works, not a parallel implementation that might have drifted.
+
+DRIVER = docker run --rm -v "$(HOME)/code":/w -w /w/fleetops-bifrost-demo/driver \
+	--platform $(PLATFORM) --env-file .env \
+	-e OKTA_AGENT_PRIVATE_KEY_FILE=/w/fleetops-bifrost-demo/secrets/agent-key.jwk \
+	golang:1.27 go run .
+
+.PHONY: demo
+demo: demo-read demo-command ## Run the happy path on both lanes
+
+.PHONY: demo-read
+demo-read: ## Read lane: expect a token naming the caller and the agent
+	@$(DRIVER) -lane read
+
+.PHONY: demo-command
+demo-command: ## Command lane: expect a token with the dispatch scope
+	@$(DRIVER) -lane command
+
+.PHONY: demo-deny
+demo-deny: ## Ask the READ lane for a COMMAND scope. Expect Okta to refuse, by name
+	@$(DRIVER) -lane read -scopes "fleet.dispatch.command" || true
 
 .PHONY: revoke
 revoke: ## Print the console path for deactivating the agent, which is the demo's punchline

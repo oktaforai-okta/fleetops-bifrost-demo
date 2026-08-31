@@ -15,8 +15,8 @@
   "mcp": {
     "client_configs": [
       {
-        "name": "fleetops-read",
-        "client_id": "fleetops-read",
+        "name": "fleetops_read",
+        "client_id": "fleetops_read",
         "connection_type": "http",
         "connection_string": "http://fleetops:8080/mcp",
 
@@ -25,8 +25,8 @@
         "tools_to_execute": ["get_telemetry", "list_routes"]
       },
       {
-        "name": "fleetops-command",
-        "client_id": "fleetops-command",
+        "name": "fleetops_command",
+        "client_id": "fleetops_command",
         "connection_type": "http",
         "connection_string": "http://fleetops:8080/mcp",
         "auth_type": "none",
@@ -39,23 +39,23 @@
     {
       "enabled": true,
       "name": "okta-agent-identity",
-      "path": "/etc/bifrost/plugins/okta-agent-identity-amd64.so",
+      "path": "/etc/bifrost/plugins/okta-agent-identity-${PLUGIN_ARCH}.so",
       "placement": "pre_builtin",
       "config": {
         "okta_domain": "${OKTA_DOMAIN}",
         "agent_id": "${OKTA_AGENT_ID}",
         "agent_resource_url": "${OKTA_AGENT_RESOURCE_URL}",
-        "private_key_jwk": ${OKTA_AGENT_PRIVATE_KEY_JWK},
+        "private_key_jwk_file": "/secrets/agent-key.jwk",
         "agent_status_ttl": "10s",
         "fail_open": false,
         "bindings": {
-          "fleetops-read": {
+          "fleetops_read": {
             "authorization_server_id": "${OKTA_READ_LANE_AS_ID}",
             "target_resource_url": "${FLEETOPS_READ_RESOURCE_URL}",
             "scopes": ["fleet.telemetry.read", "fleet.routes.read"],
             "tools": ["get_telemetry", "list_routes"]
           },
-          "fleetops-command": {
+          "fleetops_command": {
             "authorization_server_id": "${OKTA_COMMAND_LANE_AS_ID}",
             "target_resource_url": "${FLEETOPS_COMMAND_RESOURCE_URL}",
             "scopes": ["fleet.dispatch.command"],

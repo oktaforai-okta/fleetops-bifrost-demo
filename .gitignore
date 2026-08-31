@@ -12,3 +12,12 @@ bin/
 
 # Compiled binary, written into the mount by a containerised go build.
 server/server
+driver/driver
+
+# Local CA bundles for TLS-intercepting networks. Machine-specific, never committed.
+certs/*
+!certs/README.md
+
+# Agent private key. Never committed.
+secrets/*
+!secrets/README.md

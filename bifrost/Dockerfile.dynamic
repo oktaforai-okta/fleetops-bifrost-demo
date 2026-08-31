@@ -1,0 +1,82 @@
+# A dynamically linked Bifrost, which is what plugin support requires.
+#
+# This is not a workaround. Bifrost's published images are statically linked on purpose,
+# for portability across libc implementations, and Go's plugin system cannot load a .so
+# into a statically linked host. Their own docs say so: see
+# https://docs.getbifrost.ai/plugins/building-dynamic-binary
+#
+# So running ANY Bifrost plugin means building and maintaining your own Bifrost binary.
+# That is a real operational cost, and it is worth knowing before choosing the plugin
+# route over the alternatives.
+#
+# The difference from their published build is one linker flag: they pass
+# -extldflags '-static', and this does not.
+
+ARG GO_IMAGE=golang:1.27.0-alpine3.24
+ARG RUNTIME_IMAGE=alpine:3.23
+
+FROM ${GO_IMAGE} AS builder
+
+# Which Bifrost to build. Pin this: the plugin must be compiled against the same
+# bifrost/core version this transports tag depends on, or it will not load. Check with
+# `make compat` in the plugin repo.
+ARG BIFROST_REF=transports/v2.0.0
+
+RUN apk add --no-cache gcc musl-dev sqlite-dev git file
+
+# Optional corporate CA, for networks that intercept TLS. Without this, the git clone
+# below fails with an unknown-authority error. Harmless when the directory holds only
+# its README.
+COPY certs/ /tmp/certs/
+RUN if [ -f /tmp/certs/ca-bundle.crt ]; then \
+      cat /tmp/certs/ca-bundle.crt >> /etc/ssl/certs/ca-certificates.crt && \
+      echo "added local CA bundle to the build trust store" ; \
+    fi
+
+WORKDIR /src
+RUN git clone --depth 1 --branch "${BIFROST_REF}" https://github.com/maximhq/bifrost.git .
+
+WORKDIR /src/transports
+
+# The admin console is embedded with `//go:embed all:ui` and is produced by a separate
+# npm build. This demo is driven from a terminal and never opens the console, so a
+# placeholder satisfies the embed directive and keeps a whole Node toolchain out of the
+# build. If you want the console, build the UI as their Dockerfile does instead.
+RUN mkdir -p bifrost-http/ui && \
+    printf '<!doctype html><title>Bifrost admin console not built</title>\n' > bifrost-http/ui/index.html
+
+ENV CGO_ENABLED=1 GOOS=linux GOWORK=off
+ARG VERSION=dynamic-local
+
+# No -extldflags '-static'. That single omission is what makes plugin loading possible.
+RUN go build \
+      -ldflags="-w -s -X main.Version=v${VERSION}" \
+      -trimpath \
+      -o /out/main \
+      ./bifrost-http
+
+# Fail the build rather than discovering at runtime that plugins cannot load. The runtime
+# symptom is "plugin.Open: Dynamic loading not supported", which does not obviously point
+# at the linker.
+RUN file /out/main | grep -q "dynamically linked" \
+      && echo "OK: dynamically linked, plugins can load" \
+      || (echo "ERROR: statically linked, plugins will NOT load" && file /out/main && exit 1)
+
+FROM ${RUNTIME_IMAGE}
+WORKDIR /app
+
+# musl and libgcc are needed because the binary is dynamically linked against them.
+RUN apk add --no-cache musl libgcc ca-certificates wget
+
+COPY --from=builder /out/main /app/main
+COPY --from=builder /src/transports/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh && mkdir -p /app/data
+
+ENV APP_PORT=8080 \
+    APP_HOST=0.0.0.0 \
+    LOG_LEVEL=info \
+    LOG_STYLE=json \
+    APP_DIR=/app/data
+
+EXPOSE 8080
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
