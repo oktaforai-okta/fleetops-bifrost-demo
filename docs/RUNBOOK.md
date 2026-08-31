@@ -1,6 +1,6 @@
 # Okta setup runbook
 
-Everything here happens once, in your own tenant. Roughly 30 minutes the first time.
+Everything here happens once, in your own tenant. Roughly 45 minutes the first time.
 
 Values you collect go into `.env`. Nothing from this runbook belongs in a committed file.
 
@@ -9,7 +9,34 @@ input. Skipping ahead mostly produces errors that point at the wrong object.
 
 ---
 
-## 1. Two authorization servers, one per lane
+## 0. Check the feature is on
+
+**Settings > Features**, find **Secure AI A2A Servers**, and enable it.
+
+This is a hard prerequisite for the agent-to-agent exchange. Without it the exchange in
+step 2 of the flow fails outright, and the error will not mention a feature flag. Check
+this first, because everything below depends on it and it costs ten seconds to confirm.
+
+---
+
+## Three authorization servers, not two
+
+Worth stating up front, because it is the easiest thing to get wrong. This demo needs
+**three** custom authorization servers, doing different jobs:
+
+| | Protects | Who mints there | Why |
+|---|---|---|---|
+| **Agent server** | the agent itself, as a resource | the service client, via `client_credentials` | Produces the first token, whose audience is the agent. This is what the delegation chain starts from |
+| **Read lane** | Fleet Ops telemetry | the agent, via ID-JAG redemption | Grants the read scopes |
+| **Command lane** | Fleet Ops dispatch | the agent, via ID-JAG redemption | Grants the dispatch scope |
+
+The agent server is the one people miss. Its existence is why the caller's grant is
+specific to invoking *this* agent rather than being ambient authority, and without it
+there is nothing for step one to mint against.
+
+---
+
+## 1. The two Fleet Ops authorization servers
 
 **Security > API > Authorization Servers > Add Authorization Server**, twice.
 
@@ -64,9 +91,14 @@ but it hides which lane grants what, which is the thing you are trying to demons
   it over the API
 - Generate a key pair under client credentials
 
-**The private key is shown exactly once.** Copy it immediately into `.env` as
-`OKTA_AGENT_PRIVATE_KEY_JWK`, on one line. If you miss it, generate a new key rather than
-trying to recover the old one.
+**The private key is shown exactly once.** Save it immediately to
+`secrets/agent-key.jwk`, as the JSON object Okta shows you. If you miss it, generate a new
+key pair rather than trying to recover the old one.
+
+It goes in a file rather than in `.env` on purpose. A JWK pasted unquoted into an env file
+is destroyed the moment that file is sourced by a shell, because the quotes are stripped
+and the commas are treated as brace expansion. Keeping it in a file also means the
+rendered Bifrost config never contains key material, so the config is not itself a secret.
 
 Activate the agent once the owner is assigned. Record the `wlp...` id as
 `OKTA_AGENT_ID`.
@@ -87,7 +119,30 @@ Without it there is nothing for the caller's grant to be specific to.
 
 ---
 
-## 3. A service client to start the chain
+## 3. The agent's own authorization server
+
+This is the third server from the table above, and the one that is easy to skip.
+
+**Security > API > Authorization Servers > Add Authorization Server.**
+
+| | |
+|---|---|
+| Name | `Fleet Ops Agent` |
+| Audience | the agent's resource URL from step 2, e.g. `https://fleetops.atko.example/agent` |
+
+On its **Scopes** tab add `agent.invoke`. On **Access Policies**, add a policy and a rule
+allowing the **Client Credentials** grant type, and list `agent.invoke`.
+
+Record its id as `OKTA_AGENT_OWN_AS_ID`, and the scope as
+`OKTA_SERVICE_CLIENT_SCOPE=agent.invoke`.
+
+Note the grant type here is Client Credentials, not JWT Bearer. This server is minting a
+token *for a service client acting as itself*, which is a different job from the two lane
+servers, where the agent redeems an assertion.
+
+---
+
+## 4. A service client to start the chain
 
 **Applications > Create App Integration > API Services.**
 
@@ -96,15 +151,20 @@ grant types are token-exchange and jwt-bearer only. So something else has to min
 first token, and that something is a service client standing in for the scheduler or
 pipeline that would trigger the agent in production.
 
-Then add the service client as a permitted caller on the agent, so it is allowed to
-delegate to it. In the console this is the agent's inbound callers list, which you may
-also see labelled Linked Applications.
+Two things to wire up:
 
-Record the client id and secret for whatever drives the demo.
+1. Grant it access to the agent server from step 3, so it can mint there with the
+   `agent.invoke` scope.
+2. Add it as a permitted caller on the **agent**, so it is allowed to delegate to it. In
+   the console this is the agent's inbound callers list, which you may also see labelled
+   Linked Applications.
+
+Record the client id and secret as `OKTA_SERVICE_CLIENT_ID` and
+`OKTA_SERVICE_CLIENT_SECRET`.
 
 ---
 
-## 4. Connect the agent to both lanes
+## 5. Connect the agent to both lanes
 
 On the agent, **Resource connections > Add connection**, twice. Resource type
 **Authorization server**.
@@ -146,7 +206,7 @@ looks like a typo in a URL.
 
 ---
 
-## 5. Fill in .env
+## 6. Fill in .env
 
 `FLEETOPS_ISSUERS` is `https://<domain>/oauth2/<aus id>` for each lane, comma separated.
 
@@ -161,23 +221,46 @@ server validates against the resource URL, which is the correct one of those two
 
 ---
 
-## 6. Run it
+## 7. Run it
+
+Start with the driver, not the gateway. It exercises the real exchange with nothing else
+in the way, so when something is misconfigured you see Okta's own answer rather than a
+gateway's interpretation of it.
+
+```bash
+make demo-read          # expect a token naming the caller and the agent
+make demo-command       # expect a token with the dispatch scope
+make demo-deny          # read lane asked for a command scope: expect a refusal
+```
+
+On `demo-read`, the line worth reading is the delegation chain: the calling service as
+subject, the agent as actor. If the actor is absent, the `act` claim did not come back and
+the central claim of the demo is not being made. Stop and fix that before going further.
+
+Then the revocation moment, which is the point of the whole thing:
+
+1. `make demo-command` and watch it succeed.
+2. Deactivate the agent: **Directory > AI Agents > your agent > Deactivate**.
+3. `make demo-command` again. Okta now refuses to issue.
+
+There is a second, sharper version of the same idea. The token the lane issues is an
+ordinary Okta access token, so it can be revoked directly rather than by deactivating the
+whole agent. That distinction is worth having ready if someone asks whether the only
+control is an all-or-nothing kill switch.
+
+### Through the gateway
+
+Once the driver is green, the same story runs through Bifrost:
 
 ```bash
 make up
 make logs
 ```
 
-Then connect a client and try, in order:
-
-1. `get_telemetry` with `vehicle_id: FL-114`. Succeeds. Read the delegation chain at the
-   bottom of the result: the calling service is the subject, the agent is the actor.
-2. `dispatch_vehicle` with `FL-114` and any destination. Succeeds, and the audit line
-   records which agent moved the asset.
-3. Deactivate the agent in Okta: **Directory > AI Agents > your agent > Deactivate**.
-4. `dispatch_vehicle` again. Within `agent_status_ttl`, 10 seconds by default, Bifrost
-   refuses. The connection is still open and the token it holds has not expired. The
-   refusal is Okta declining to issue, surfaced through the gateway.
+This is the coexistence half of the argument: Okta decides, Bifrost enforces. It depends
+on Bifrost being configured so the caller's token reaches the connect hook, which is a
+constraint of Bifrost's connection model rather than of Okta. If the driver works and the
+gateway does not, the problem is in the gateway configuration, not in the exchange.
 
 ---
 
