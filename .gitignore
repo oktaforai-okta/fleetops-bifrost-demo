@@ -1,0 +1,14 @@
+# Rendered from bifrost/config.template.json at startup. Contains the agent's private
+# key and every tenant identifier. Must never be committed.
+bifrost/config.json
+
+# Real values live here.
+.env
+.env.local
+
+# Built plugin artifacts, if anyone copies them in.
+*.so
+bin/
+
+# Compiled binary, written into the mount by a containerised go build.
+server/server

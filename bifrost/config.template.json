@@ -1,0 +1,68 @@
+{
+  "$schema": "https://www.getbifrost.ai/schema",
+
+  "client": {
+    "allowed_origins": ["*"],
+    "enable_logging": true
+  },
+
+  "config_store": {
+    "enabled": true,
+    "type": "sqlite",
+    "config": { "path": "/app/data/bifrost.db" }
+  },
+
+  "mcp": {
+    "client_configs": [
+      {
+        "name": "fleetops-read",
+        "client_id": "fleetops-read",
+        "connection_type": "http",
+        "connection_string": "http://fleetops:8080/mcp",
+
+        "auth_type": "none",
+
+        "tools_to_execute": ["get_telemetry", "list_routes"]
+      },
+      {
+        "name": "fleetops-command",
+        "client_id": "fleetops-command",
+        "connection_type": "http",
+        "connection_string": "http://fleetops:8080/mcp",
+        "auth_type": "none",
+        "tools_to_execute": ["dispatch_vehicle"]
+      }
+    ]
+  },
+
+  "plugins": [
+    {
+      "enabled": true,
+      "name": "okta-agent-identity",
+      "path": "/etc/bifrost/plugins/okta-agent-identity-amd64.so",
+      "placement": "pre_builtin",
+      "config": {
+        "okta_domain": "${OKTA_DOMAIN}",
+        "agent_id": "${OKTA_AGENT_ID}",
+        "agent_resource_url": "${OKTA_AGENT_RESOURCE_URL}",
+        "private_key_jwk": ${OKTA_AGENT_PRIVATE_KEY_JWK},
+        "agent_status_ttl": "10s",
+        "fail_open": false,
+        "bindings": {
+          "fleetops-read": {
+            "authorization_server_id": "${OKTA_READ_LANE_AS_ID}",
+            "target_resource_url": "${FLEETOPS_READ_RESOURCE_URL}",
+            "scopes": ["fleet.telemetry.read", "fleet.routes.read"],
+            "tools": ["get_telemetry", "list_routes"]
+          },
+          "fleetops-command": {
+            "authorization_server_id": "${OKTA_COMMAND_LANE_AS_ID}",
+            "target_resource_url": "${FLEETOPS_COMMAND_RESOURCE_URL}",
+            "scopes": ["fleet.dispatch.command"],
+            "tools": ["dispatch_vehicle"]
+          }
+        }
+      }
+    }
+  ]
+}

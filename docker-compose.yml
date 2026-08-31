@@ -1,0 +1,75 @@
+# Everything runs on one host. There is no cloud dependency, no frontend, and nothing to
+# keep warm: Bifrost, the Okta plugin, and the Fleet Ops MCP server sit side by side and
+# you drive the whole thing from a terminal.
+#
+#   cp .env.example .env      # then fill it in from your tenant
+#   make up                   # build the plugin, render the config, start everything
+#
+# The plugin .so is built by the plugin repo's Makefile and mounted in read-only. It is
+# not baked into an image, so you can rebuild it against a different Bifrost version
+# without touching anything here.
+
+services:
+  # Renders bifrost/config.template.json into bifrost/config.json with values from .env.
+  # This exists so no tenant id, resource URL, or private key is ever committed: the
+  # template holds placeholders, .env holds the real values and is gitignored.
+  config:
+    image: bhgedigital/envsubst:latest
+    volumes:
+      - ./bifrost:/work
+    working_dir: /work
+    environment:
+      OKTA_DOMAIN: ${OKTA_DOMAIN:?set OKTA_DOMAIN in .env}
+      OKTA_AGENT_ID: ${OKTA_AGENT_ID:?set OKTA_AGENT_ID in .env}
+      OKTA_AGENT_RESOURCE_URL: ${OKTA_AGENT_RESOURCE_URL:?set OKTA_AGENT_RESOURCE_URL in .env}
+      OKTA_AGENT_PRIVATE_KEY_JWK: ${OKTA_AGENT_PRIVATE_KEY_JWK:?set OKTA_AGENT_PRIVATE_KEY_JWK in .env}
+      OKTA_READ_LANE_AS_ID: ${OKTA_READ_LANE_AS_ID:?set OKTA_READ_LANE_AS_ID in .env}
+      OKTA_COMMAND_LANE_AS_ID: ${OKTA_COMMAND_LANE_AS_ID:?set OKTA_COMMAND_LANE_AS_ID in .env}
+      FLEETOPS_READ_RESOURCE_URL: ${FLEETOPS_READ_RESOURCE_URL:?set FLEETOPS_READ_RESOURCE_URL in .env}
+      FLEETOPS_COMMAND_RESOURCE_URL: ${FLEETOPS_COMMAND_RESOURCE_URL:?set FLEETOPS_COMMAND_RESOURCE_URL in .env}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        envsubst < config.template.json > config.json
+        # Fail loudly rather than handing Bifrost a config with unsubstituted variables,
+        # which would otherwise surface as a confusing plugin Init error.
+        if grep -q '\$\{' config.json; then
+          echo "ERROR: config.json still contains unsubstituted variables:" >&2
+          grep -o '\$\{[A-Z_]*\}' config.json | sort -u >&2
+          exit 1
+        fi
+        echo "rendered bifrost/config.json"
+
+  fleetops:
+    build:
+      context: ./server
+    environment:
+      # The server validates tokens itself rather than trusting the gateway. If the
+      # gateway were the only thing checking, bypassing the gateway would bypass
+      # authorization entirely.
+      FLEETOPS_ISSUERS: ${FLEETOPS_ISSUERS:?set FLEETOPS_ISSUERS in .env}
+      FLEETOPS_AUDIENCES: ${FLEETOPS_AUDIENCES:?set FLEETOPS_AUDIENCES in .env}
+      FLEETOPS_ADDR: ":8080"
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  bifrost:
+    image: ${BIFROST_IMAGE:-maximhq/bifrost:latest}
+    depends_on:
+      config:
+        condition: service_completed_successfully
+      fleetops:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./bifrost/config.json:/app/config/config.json:ro
+      # Built by the plugin repo: make plugin PLATFORM=linux/amd64
+      - ../okta-bifrost-plugin/bin:/etc/bifrost/plugins:ro
+      - bifrost-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  bifrost-data:
