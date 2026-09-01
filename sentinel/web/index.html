@@ -350,7 +350,7 @@
 "outcome": { "result": "FAILURE", "reason": "illegal_scope" },
 
 "actor": {
-  "id": "wlp135utpw8KDW1MD1d8",
+  "id": "wlpEXAMPLEagent00001",
   "displayName": "Sentinel Intake Agent (A)",
   "detailEntry": { "subjectProfile": "ai_agent" }
 },
@@ -382,7 +382,7 @@
 "debugContext": { "debugData": {
   "grantedScopes": "agent.invoke, task.read",
   "requestedScopes": "agent.invoke, task.read",
-  "clientId": "wlp135utpw8KDW1MD1d8",
+  "clientId": "wlpEXAMPLEagent00001",
   "tokenExchangeType": "Agent ID Assertion"
 }},
 
@@ -390,8 +390,8 @@
   "type": "id_jag",
   "displayName": "Identity Assertion JWT Authorization Grant",
   "detailEntry": {
-    "actor": "{\"sub\":\"wlp135utpw8KDW1MD1d8\",\"sub_profile\":\"ai_agent\",
-               \"act\":{\"sub\":\"0oa135u99u4fFlc8c1d8\",\"sub_profile\":\"service\"}}",
+    "actor": "{\"sub\":\"wlpEXAMPLEagent00001\",\"sub_profile\":\"ai_agent\",
+               \"act\":{\"sub\":\"0oaEXAMPLEservice001\",\"sub_profile\":\"service\"}}",
     "scope": "agent.invoke task.read",
     "subjectProfile": "service"
   }
@@ -455,8 +455,8 @@ tool handler error   tool="fleetops_command-dispatch_vehicle"
     </p>
     <p>Allowed calls plainly did arrive, each with the chain the server read for itself:</p>
 <pre class="log">tools/call list_routes ACCEPTED, scope task.read,
-  chain 0oa135u99u4fFlc8c1d8 (service) &lt;- wlp135utpw8KDW1MD1d8 (ai_agent),
-  jti AT.PDjEsyMJVU6Itae9ZJJgwe3DKT4VTmO8rqSjg32QS6A</pre>
+  chain 0oaEXAMPLEservice001 (service) &lt;- wlpEXAMPLEagent00001 (ai_agent),
+  jti AT.EXAMPLE_token_id_not_a_real_one</pre>
   </section>
 
 </div>
