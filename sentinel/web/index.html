@@ -152,7 +152,13 @@
     </p>
     <p class="hint">
       Open source, reusable by any Bifrost customer:
-      <code>oktaforai-okta/okta-bifrost-plugin</code>
+      <a href="https://github.com/oktaforai-okta/okta-bifrost-plugin"
+         target="_blank" rel="noopener noreferrer"><code>oktaforai-okta/okta-bifrost-plugin</code></a>
+    </p>
+    <p class="hint">
+      The demo you are looking at, including its Okta setup runbook:
+      <a href="https://github.com/oktaforai-okta/fleetops-bifrost-demo"
+         target="_blank" rel="noopener noreferrer"><code>oktaforai-okta/fleetops-bifrost-demo</code></a>
     </p>
   </section>
 
@@ -540,6 +546,68 @@ tool handler error   tool="fleetops_command-dispatch_vehicle"
     tabs.forEach(function (t) {
       if (t.btn && t.panel) t.btn.addEventListener('click', function () { show(t); });
     });
+
+    // Colour the sample logs so the eye can find the field that matters instead of reading
+    // JSON line by line on a projector.
+    //
+    // ONE pass, with a replacer function, deliberately. Chained .replace() calls would
+    // match inside the class="..." attributes the previous call had just inserted, because
+    // an attribute value looks exactly like a quoted JSON string. A single alternating
+    // regex cannot re-enter its own output.
+    // Marked up INSIDE a string value as well as outside it. This matters because in real
+    // Okta JSON the words that carry the outcome are quoted: "result": "FAILURE" and
+    // "reason": "illegal_scope". Treating them as ordinary string values left the single
+    // most important word on the page uncoloured.
+    var INNER = new RegExp([
+      '(ai_agent|okta-bifrost-plugin\\/[0-9.]+|private_key_jwt|task\\.dispatch|task\\.read)',
+      '\\b(SUCCESS|INFO|ACCEPTED)\\b',
+      '\\b(FAILURE|WARN|illegal_scope|invalid_scope)\\b'
+    ].join('|'), 'g');
+
+    // mark applies INNER to one raw token in a single pass. Single pass again, and for the
+    // same reason: two chained replaces would let the second match inside the class
+    // attributes the first inserted.
+    function mark(s) {
+      return s.replace(INNER, function (m, emph, good, bad) {
+        if (emph) return '<span class="jhi">' + m + '</span>';
+        if (good) return '<span class="jok">' + m + '</span>';
+        return '<span class="jbad">' + m + '</span>';
+      });
+    }
+
+    // Every case is an alternation in ONE regex, including the emphasis terms, so the whole
+    // job is a single pass. A second pass over the output would re-match the terms it had
+    // already wrapped and nest them twice.
+    var TOKENS = new RegExp([
+      '("(?:[^"\\\\]|\\\\.)*")(\\s*:)?',              // a JSON string, and whether it is a key
+      '\\b(SUCCESS|INFO|ACCEPTED|success)\\b',        // good outcomes
+      '\\b(FAILURE|WARN|illegal_scope|invalid_scope|error|denied)\\b', // bad outcomes
+      '(ai_agent|okta-bifrost-plugin\\/[0-9.]+|private_key_jwt|task\\.dispatch|task\\.read)'
+    ].join('|'), 'g');
+
+    function esc(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlight(pre) {
+      pre.innerHTML = esc(pre.textContent).replace(
+        TOKENS,
+        function (m, str, colon, good, bad, emph) {
+          if (str !== undefined) {
+            if (colon) return '<span class="jk">' + str + '</span>' + colon;
+            // Safe to mark here: this operates on one raw string token that has no inserted
+            // markup in it yet, so there is nothing to re-match.
+            return '<span class="jv">' + mark(str) + '</span>';
+          }
+          if (good) return '<span class="jok">' + m + '</span>';
+          if (bad) return '<span class="jbad">' + m + '</span>';
+          if (emph) return '<span class="jhi">' + m + '</span>';
+          return m;
+        }
+      );
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('pre.log'), highlight);
   })();
 </script>
 </body>

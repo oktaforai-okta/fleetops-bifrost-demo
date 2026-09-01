@@ -502,9 +502,11 @@ function renderSteps() {
         onclick: () => select('hop', shape.hop),
       }, [
         el('span', { class: 'step-state', text: STATES[s].text }),
-        // An explicit separator: the flex gap spaces these visually, but a screen reader
-        // reading textContent would otherwise hear "refusedWatch Service mints…".
-        ', ',
+        // A separator for screen readers ONLY. Without it, reading textContent runs the
+        // words together as "refusedWatch Service mints". Visually the flex gap already
+        // separates them, so this must not be visible: a bare ", " here rendered as a
+        // stray comma floating between the state and the label.
+        el('span', { class: 'sr-only', text: ', ' }),
         el('span', { class: 'step-label', text: shape.label }),
       ]),
     ]));

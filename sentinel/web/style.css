@@ -840,3 +840,29 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
 @media (max-width: 640px) {
   .action > button { margin-left: 0; }
 }
+
+/* The two action rows sit side by side, which is compact and shows both outcomes at once.
+   The status line must NOT join that row: as a third flex item it dangled to the right of
+   the buttons reading "Not run yet.", which looks like a stray fragment rather than a
+   status. Forcing a full-width basis puts it on its own line underneath. */
+.controls > #status { flex-basis: 100%; margin-top: .1rem; }
+
+/* Repo links read as links, not as inert code. The demo is meant to be taken away and
+   run, so these are a real part of the pitch rather than decoration. */
+#tab-plugin a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+#tab-plugin a:hover code { background: #e7eaee; }
+
+/* Sample log colouring. Applied by the inline highlighter at the end of index.html.
+   Purpose is to let the eye find the field that matters on a projector, not to look like
+   an IDE, so the palette is deliberately small: keys recede, values read normally, and
+   only outcomes and the two or three fields a presenter points at are coloured. */
+pre.log .jk   { color: #6a737d; }                        /* JSON keys, deliberately quiet */
+pre.log .jv   { color: #1f2328; }                        /* string values */
+pre.log .jok  { color: #12653b; font-weight: 700; }      /* SUCCESS, INFO, ACCEPTED */
+pre.log .jbad { color: #8c1d18; font-weight: 700; }      /* FAILURE, WARN, invalid_scope */
+pre.log .jhi  {                                          /* the fields worth pointing at */
+  font-weight: 700;
+  background: #fff3bf;
+  border-radius: 3px;
+  padding: 0 2px;
+}
