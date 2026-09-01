@@ -374,7 +374,7 @@ function drawDiagram() {
       .attr('class', 'node-state')
       .attr('x', x + 16).attr('y', y + 146);
 
-    g.append('title').text(p.name + ' — ' + p.role +
+    g.append('title').text(p.name + '\n' + p.role +
       (p.resource_url ? '\nresource: ' + p.resource_url : ''));
 
     g.on('click', () => select('node', p.id));
@@ -433,7 +433,7 @@ function drawDiagram() {
       .attr('class', 'node-state')
       .attr('x', x + 16).attr('y', y + 94);
 
-    g.append('title').text(p.name + ' — ' + p.role);
+    g.append('title').text(p.name + '\n' + p.role);
 
     g.on('click', () => select('node', p.id));
     g.on('keydown', (event) => {
@@ -504,7 +504,7 @@ function renderSteps() {
         el('span', { class: 'step-state', text: STATES[s].text }),
         // An explicit separator: the flex gap spaces these visually, but a screen reader
         // reading textContent would otherwise hear "refusedWatch Service mints…".
-        ' — ',
+        ', ',
         el('span', { class: 'step-label', text: shape.label }),
       ]),
     ]));

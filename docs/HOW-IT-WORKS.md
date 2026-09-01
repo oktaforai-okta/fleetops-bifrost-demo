@@ -120,7 +120,7 @@ a few more minutes after you switch it off" is not something you want to discove
 an incident.
 
 Closing that gap needs one thing: **something that keeps asking.** Not once at the start
-of the session, but on every single call.
+of the session, but on a short cycle, with every call gated on the latest answer.
 
 That something is the gateway. It sits in the path, so it is the only component that sees
 every call and can refuse one. This is why the gateway is not simply a convenient place
@@ -139,7 +139,7 @@ and later discovers the narrower reality will trust the rest of it less.
 |---|---|
 | Names both parties on every call | The service that asked, and the agent that acted, separately |
 | Puts the decision in Okta | Policy lives with your identity provider, not in the gateway |
-| Re-checks continuously | Every call, not once per session |
+| Re-checks continuously | Every call is checked, not just the first one in a session. Okta's answer is reused for a few seconds rather than re-fetched every time |
 | Refuses by permission, not by outage | A denied call is denied because policy says so, and the refusal says which permission was missing |
 | Lets the target system verify independently | The receiving system checks the credential itself, so bypassing the gateway does not bypass authorization |
 
@@ -192,9 +192,11 @@ gains the ability to ask Okta about the agent.
 default is to refuse. Failing open is available as a deliberate, recorded choice, which is
 the only way it should ever be on.
 
-**How quickly does turning an agent off take effect?** On the next call. As configured today
-there is no caching of the answer at all, so every single call asks Okta afresh. The
-trade-off is one extra round trip per call, which is a deliberate choice.
+**How quickly does turning an agent off take effect?** Within ten seconds, as configured today.
+The gateway remembers Okta's answer for a short window rather than asking on literally every
+call. That window is a dial you set, and it is a genuine trade: shorter means a deactivation
+bites faster, longer means fewer checks. Ten seconds is a demonstration default, not a tuned
+production number.
 
 **Can we see which agent did something, after the fact?** Yes. Both parties are on the
 credential and in the target system's own logs, not only in the gateway's.

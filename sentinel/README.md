@@ -40,9 +40,9 @@ this flow, the assertion is the likelier place to find it.
 alongside the error. That is what lets this page separate the two failures that look alike
 and are not:
 
-- **the exchange failed** — Okta would not assert the delegation at all. No assertion comes
+- **the exchange failed**: Okta would not assert the delegation at all. No assertion comes
   back, nothing is shown for it, and the redemption step is marked not attempted.
-- **redemption failed** — Okta *did* assert the delegation, and the target authorization
+- **redemption failed**: Okta *did* assert the delegation, and the target authorization
   server refused to honour it. The assertion is decoded and shown, so you can read what was
   asserted on your behalf before it was refused.
 

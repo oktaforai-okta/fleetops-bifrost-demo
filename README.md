@@ -57,9 +57,10 @@ So when you deactivate a misbehaving agent, two things are true at once. Okta wi
 issue it anything new, instantly. And the credential it is already holding keeps working
 until it expires on its own.
 
-Closing that gap needs something that **keeps asking**, on every single call rather than
-once per session. The only component that sees every call is the gateway. That is why the
-gateway is not merely a convenient place to put this. It is the only place it can go.
+Closing that gap needs something that **keeps asking**, gating every call on a recent answer
+rather than checking once per session. The only component that sees every call is the gateway.
+That is why the gateway is not merely a convenient place to put this. It is the only place it
+can go.
 
 ### What it does not do
 
@@ -204,6 +205,20 @@ make plugin PLATFORM=linux/arm64     # or linux/amd64
 The artifact lands at `bin/okta-agent-identity-<arch>.so`, with the architecture in the
 filename so two builds cannot be confused for each other. Compose mounts that whole `bin/`
 directory read-only, so a rebuild needs no change here.
+
+**From this repo you do not need to pass `PLATFORM` at all.** `make up` and `make plugin`
+derive it from the host, because `scripts/render-config.sh` independently derives the plugin
+filename from `uname -m` and the two must agree. The plugin repo's own Makefile still defaults
+to `linux/amd64`, so pass `PLATFORM` when you build from there directly.
+
+> **The architecture mismatch has a failure mode worse than not loading.** On a clean checkout
+> the two sides disagree and the plugin simply fails to load, which is at least loud. On a
+> machine where an `.so` of the *other* architecture already exists, the build **succeeds while
+> being wrong**: the artifact nobody loads is rebuilt, Bifrost loads the stale file already on
+> disk, and a plugin source change looks applied when it is not. If a code change appears to
+> have no effect, check which architecture is in `bin/` and which one the rendered config
+> names. Running the driver under emulation also measured 39.6s against 9.3s native, so a
+> silent fallback to the wrong platform costs about thirty seconds of dead air per run.
 
 ## Step 3. Set up Okta
 
