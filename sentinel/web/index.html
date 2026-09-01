@@ -29,9 +29,13 @@
        needing to explain what a party IS should not be able to break the run logic. -->
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button id="tab-btn-demo" type="button" class="tab selected" role="tab"
-            aria-selected="true" aria-controls="tab-demo">The demonstration</button>
+            aria-selected="true" aria-controls="tab-demo">Demo</button>
     <button id="tab-btn-about" type="button" class="tab" role="tab"
             aria-selected="false" aria-controls="tab-about">What am I looking at?</button>
+    <button id="tab-btn-plugin" type="button" class="tab" role="tab"
+            aria-selected="false" aria-controls="tab-plugin">Bifrost plugin</button>
+    <button id="tab-btn-logs" type="button" class="tab" role="tab"
+            aria-selected="false" aria-controls="tab-logs">Sample logs</button>
   </nav>
 </header>
 
@@ -42,104 +46,343 @@
   <section class="panel">
     <h2>The four parties</h2>
 
-    <h3>Okta</h3>
-    <p>
-      Okta is where identities live. Usually people; here it also holds the agent&rsquo;s own
-      identity and the rules about what that agent may do.
-    </p>
-    <p>
-      <strong>What it is doing here:</strong> answering one question, over and over. Would I
-      give this agent a credential for this thing, right now? Yes, and it issues one that
-      lasts minutes. No, and it says why.
-    </p>
-
-    <h3>Sentinel Watch Service</h3>
-    <p>
-      A piece of software that starts the work. Not a person and not an agent, just a plain
-      service account, the sort of thing a scheduler or an alerting system would be.
-    </p>
-    <p>
-      <strong>What it is doing here:</strong> asking for something to be done, and holding
-      the only credential this web page ever sees. It cannot do the work itself.
-    </p>
-
-    <h3>Bifrost</h3>
-    <p>
-      The gateway. Every tool call an agent makes passes through it. It is the customer&rsquo;s
-      existing component, not something Okta supplies.
-    </p>
-    <p>
-      <strong>What it is doing here:</strong> before each call it asks Okta whether the agent
-      is still allowed. If yes, it attaches a fresh short-lived credential and passes the call
-      on. If no, it stops the call. It holds no rules of its own, which is the point: swap the
-      rules in Okta and the gateway&rsquo;s behaviour changes with no redeploy.
-    </p>
-
-    <h3>Fleet Ops MCP server</h3>
-    <p>
-      The system being protected. A stand-in for a real operational one. It has cheap reads,
-      telemetry and routes, and one action that moves a physical asset, dispatch. Those are
-      not the same risk, so they do not carry the same permission.
-    </p>
-    <p>
-      <strong>What it is doing here:</strong> checking the credential itself, on its own, and
-      reporting what it found. It does not take the gateway&rsquo;s word for anything, so going
-      around the gateway does not get you in.
-    </p>
+    <table class="facts">
+      <thead>
+        <tr><th>Who</th><th>What it is</th><th>What it is doing here</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Okta</strong></td>
+          <td>Where identities live. Usually people. Here it also holds the
+              <strong>agent&rsquo;s</strong> identity and the rules about what it may do.</td>
+          <td>Answering one question, over and over: <strong>would I give this agent a
+              credential for this thing, right now?</strong> Yes, and it issues one that lasts
+              minutes. No, and it says why.</td>
+        </tr>
+        <tr>
+          <td><strong>Sentinel Watch&nbsp;Service</strong></td>
+          <td>Software that starts the work. <strong>Not a person, not an agent.</strong> A
+              plain service account, like a scheduler.</td>
+          <td>Asking for something to be done. It holds the <strong>only</strong> credential
+              this web page ever sees, and it cannot do the work itself.</td>
+        </tr>
+        <tr>
+          <td><strong>Bifrost</strong></td>
+          <td>The gateway every agent tool call passes through.
+              <strong>The customer&rsquo;s component, not Okta&rsquo;s.</strong></td>
+          <td>Before each call, asking Okta if the agent is still allowed. Yes: attach a fresh
+              short-lived credential and pass it on. No: stop the call.
+              <strong>It holds no rules of its own.</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Fleet Ops MCP&nbsp;server</strong></td>
+          <td>The system being protected. Cheap reads, plus one action that
+              <strong>moves a physical asset</strong>.</td>
+          <td>Checking the credential <strong>itself</strong> and reporting what it found. It
+              does not take the gateway&rsquo;s word for anything, so going around the gateway
+              does not get you in.</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
   <section class="panel">
     <h2>Why chain of custody</h2>
-    <p>
-      Because &ldquo;an agent did it&rdquo; is not a useful answer.
-    </p>
-    <p>
-      Most agent deployments today share one account. Every call arrives looking identical,
-      and three problems follow:
-    </p>
-    <ul>
-      <li>You cannot tell which agent did what. The log shows the shared account.</li>
-      <li>You cannot switch one agent off without switching all of them off, so in practice
-          nobody switches any of them off.</li>
-      <li>Permissions grow to the widest thing anyone might need, so read-only agents end up
-          holding write access.</li>
-    </ul>
-    <p>
-      Chain of custody means each credential carries two facts instead of one: <strong>who
-      asked</strong>, and <strong>which agent acted</strong>. The receiving system is told
-      both and can decide on both. That is what you are watching on the diagram.
-    </p>
+    <p>Because <strong>&ldquo;an agent did it&rdquo; is not a useful answer.</strong></p>
+
+    <table class="facts">
+      <thead>
+        <tr><th>With one shared account</th><th>With chain of custody</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>You cannot tell <strong>which</strong> agent did what. The log shows the shared
+              account.</td>
+          <td>Every credential names <strong>who asked</strong> and <strong>which agent
+              acted</strong>.</td>
+        </tr>
+        <tr>
+          <td>You cannot switch <strong>one</strong> agent off without switching off all of
+              them. So nobody switches any off.</td>
+          <td>Each agent has its own identity, so it can be stopped on its own.</td>
+        </tr>
+        <tr>
+          <td>Permissions grow to the <strong>widest</strong> thing anyone might need.
+              Read-only agents end up with write access.</td>
+          <td>Permissions are per agent, per resource, and checked on each call.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <p class="hint">
-      One honest limit: this says whether an agent may dispatch. It does not say whether it
-      may dispatch <em>that particular</em> vehicle. Per-object rules are a separate layer on
-      top of this one.
+      <strong>One honest limit.</strong> This says whether an agent may dispatch. It does not
+      say whether it may dispatch <em>that particular</em> vehicle. Per-object rules are a
+      separate layer on top.
     </p>
   </section>
 
   <section class="panel">
     <h2>Two questions people ask</h2>
-
-    <h3>Why can the agent still see the tool it is not allowed to use?</h3>
-    <p>
-      Listing the tools is not gated; running them is. The agent can see that
-      <code>dispatch_vehicle</code> exists and still cannot execute it, which is what you see
-      when the refusal happens. Hiding it would not add any control, because a hidden tool
-      still has to be refused when someone calls it directly, and gating discovery would stop
-      the gateway from registering tools at all.
-    </p>
-
-    <h3>Is Okta really asked on every single call?</h3>
-    <p>
-      The gateway evaluates every call. It also remembers Okta&rsquo;s answer for a few
-      seconds, so two identical calls in quick succession may reuse the previous answer rather
-      than ask again over the network. That window is a setting, and it is the same setting
-      that decides how quickly switching an agent off takes effect. Shorter means faster to
-      bite and more traffic to Okta.
-    </p>
+    <table class="facts">
+      <tbody>
+        <tr>
+          <td><strong>Why can the agent still <em>see</em> a tool it may not use?</strong></td>
+          <td><strong>Listing is not gated; running is.</strong> Hiding it adds no control,
+              because a hidden tool still has to be refused when called directly.</td>
+        </tr>
+        <tr>
+          <td><strong>Is Okta really asked on every call?</strong></td>
+          <td>The gateway <strong>evaluates every call</strong> and remembers Okta&rsquo;s
+              answer for a few seconds. That same window is how quickly switching an agent off
+              takes effect, so it is a tradeoff, not a free dial.</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
 </div>
 
+<div id="tab-plugin" role="tabpanel" aria-labelledby="tab-btn-plugin" hidden>
+
+  <section class="panel">
+    <h2>What the plugin is</h2>
+    <p>
+      A small piece of code that loads <strong>inside Bifrost</strong>. Bifrost is not
+      modified and not forked. The plugin is what makes the gateway ask Okta.
+    </p>
+    <p class="hint">
+      Open source, reusable by any Bifrost customer:
+      <code>oktaforai-okta/okta-bifrost-plugin</code>
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>What it does, at two moments</h2>
+    <table class="facts">
+      <thead><tr><th>When</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Connecting</strong></td>
+          <td>Gets a <strong>short-lived, agent-scoped token</strong> from Okta and attaches
+              it to the upstream call. The token names both the calling service and the
+              acting agent.</td>
+        </tr>
+        <tr>
+          <td><strong>Every tool call</strong></td>
+          <td>Asks Okta <strong>again</strong> whether it would still issue that token. If
+              not, the call is refused and never leaves the gateway.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Why ask twice</h2>
+    <p>
+      <strong>A credential that has been issued cannot be taken back.</strong> That is how
+      access tokens work everywhere, not a flaw in Okta. So when you switch an agent off, two
+      things are true at once: Okta will issue it nothing new, instantly, and the credential
+      it already holds keeps working until it expires.
+    </p>
+    <p>
+      Closing that gap needs something that <strong>keeps asking</strong>. The only component
+      that sees every call is the gateway. That is why this lives here and not somewhere more
+      convenient.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Design choices worth knowing</h2>
+    <table class="facts">
+      <tbody>
+        <tr><td><strong>Asking Okta to mint <em>is</em> the question</strong></td>
+            <td>Rather than reading an agent&rsquo;s status from an admin API. The grant is
+                the decision, it needs no second admin credential, and it exercises the same
+                policy path the real call depends on.</td></tr>
+        <tr><td><strong>A refusal is never returned as an error</strong></td>
+            <td>Bifrost treats a hook error as non-blocking, so refusing by error would let
+                the call through. It short-circuits instead.</td></tr>
+        <tr><td><strong>Answers are cached briefly</strong></td>
+            <td>Keyed on the exact question: authorization server, target, and the sorted
+                scope set. The cache lifetime is also the revocation delay.</td></tr>
+        <tr><td><strong>Known limit</strong></td>
+            <td>Catches an agent being <strong>switched off</strong>. Does not catch scopes
+                being <strong>narrowed</strong>, because the token in flight keeps what it was
+                granted at connect.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<div id="tab-logs" role="tabpanel" aria-labelledby="tab-btn-logs" hidden>
+
+  <section class="panel">
+    <h2>Proving this is real</h2>
+    <p>
+      A web page can be made to say anything. These are the <strong>same events, recorded by
+      systems that are not this page.</strong>
+    </p>
+    <table class="facts">
+      <thead><tr><th>Source</th><th>What it proves</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Okta System Log</strong></td>
+            <td>The <strong>decision</strong>, at the source. Okta granted one and refused the
+                other.</td></tr>
+        <tr><td><strong>Bifrost log</strong></td>
+            <td>The <strong>enforcement</strong>. The gateway obeyed, in its own words.</td></tr>
+        <tr><td><strong>Fleet Ops log</strong></td>
+            <td>The refused call <strong>never arrived</strong>. Count is zero.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>In the Okta System Log</h2>
+    <p><strong>What to look for:</strong></p>
+    <table class="facts">
+      <thead><tr><th>Field</th><th>Allowed</th><th>Refused</th></tr></thead>
+      <tbody>
+        <tr><td><code>eventType</code></td>
+            <td><code>app.oauth2.token.grant.id_jag</code></td>
+            <td><code>app.oauth2.token.grant</code></td></tr>
+        <tr><td><code>outcome.result</code></td><td><strong>SUCCESS</strong></td>
+            <td><strong>FAILURE</strong></td></tr>
+        <tr><td><code>outcome.reason</code></td><td>none</td>
+            <td><strong>illegal_scope</strong></td></tr>
+        <tr><td><code>requestedScopes</code></td><td>agent.invoke, task.read</td>
+            <td>agent.invoke, <strong>task.dispatch</strong></td></tr>
+        <tr><td><code>grantedScopes</code></td><td>agent.invoke, task.read</td>
+            <td><strong>empty</strong></td></tr>
+        <tr><td><code>severity</code></td><td>INFO</td><td><strong>WARN</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The three fields that matter most:</strong></p>
+    <ul>
+      <li><code>actor.detailEntry.subjectProfile</code> is <strong>ai_agent</strong>. Okta
+          knows this is an agent, not a person and not a service.</li>
+      <li><code>client.userAgent.rawUserAgent</code> is
+          <strong>okta-bifrost-plugin/0.1</strong>. That is our plugin calling Okta. Proof the
+          gateway is doing the asking.</li>
+      <li><code>tokenExchangeType</code> is <strong>Agent ID Assertion</strong>, with
+          <code>clientAuthType: private_key_jwt</code>. No shared secret.</li>
+    </ul>
+
+    <details class="reference">
+      <summary><strong>Sample: refused</strong>, trimmed to what matters</summary>
+<pre class="log">"eventType": "app.oauth2.token.grant",
+"displayMessage": "OIDC token request",
+"severity": "WARN",
+"outcome": { "result": "FAILURE", "reason": "illegal_scope" },
+
+"actor": {
+  "id": "wlp135utpw8KDW1MD1d8",
+  "displayName": "Sentinel Intake Agent (A)",
+  "detailEntry": { "subjectProfile": "ai_agent" }
+},
+"client": { "userAgent": { "rawUserAgent": "okta-bifrost-plugin/0.1" } },
+
+"debugContext": { "debugData": {
+  "clientAuthType": "private_key_jwt",
+  "tokenExchangeType": "Agent ID Assertion",
+  "requestedScopes": "agent.invoke, task.dispatch",
+  "grantedScopes": "",
+  "resource": "https://sentinel.atko.example/tasking",
+  "requestedTokenType": "urn:ietf:params:oauth:token-type:id-jag",
+  "grantType": "urn:ietf:params:oauth:grant-type:token-exchange"
+}}</pre>
+      <p class="hint">
+        <strong>Read it as:</strong> the agent asked for <code>task.dispatch</code>, Okta
+        granted nothing, and logged it as a WARN with reason
+        <code>illegal_scope</code>. No token was ever issued.
+      </p>
+    </details>
+
+    <details class="reference">
+      <summary><strong>Sample: allowed</strong>, and the delegation chain Okta recorded</summary>
+<pre class="log">"eventType": "app.oauth2.token.grant.id_jag",
+"displayMessage": "OAuth 2.0 Identity Assertion Authorization Grant is granted",
+"severity": "INFO",
+"outcome": { "result": "SUCCESS" },
+
+"debugContext": { "debugData": {
+  "grantedScopes": "agent.invoke, task.read",
+  "requestedScopes": "agent.invoke, task.read",
+  "clientId": "wlp135utpw8KDW1MD1d8",
+  "tokenExchangeType": "Agent ID Assertion"
+}},
+
+"target": [ {
+  "type": "id_jag",
+  "displayName": "Identity Assertion JWT Authorization Grant",
+  "detailEntry": {
+    "actor": "{\"sub\":\"wlp135utpw8KDW1MD1d8\",\"sub_profile\":\"ai_agent\",
+               \"act\":{\"sub\":\"0oa135u99u4fFlc8c1d8\",\"sub_profile\":\"service\"}}",
+    "scope": "agent.invoke task.read",
+    "subjectProfile": "service"
+  }
+} ]</pre>
+      <p class="hint">
+        <strong>This is the whole argument in one field.</strong> That nested
+        <code>actor</code> is the chain of custody, recorded by Okta itself: the
+        <strong>agent</strong> acted, on behalf of the <strong>service</strong>, and each is
+        typed. Two principals, one credential, in Okta&rsquo;s own log rather than ours.
+      </p>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>In the Bifrost log</h2>
+    <p><strong>What to look for:</strong> one line per tool call, and the word that starts it.</p>
+
+<pre class="log">tool handler success tool="fleetops_read-list_routes"
+
+tool handler error   tool="fleetops_command-dispatch_vehicle"
+  error=okta denied "fleetops_command-dispatch_vehicle" on "fleetops_command":
+        id-jag exchange: invalid_scope: The following scopes are not allowed
+        for this request: [task.dispatch]. (HTTP 400)</pre>
+
+    <table class="facts">
+      <thead><tr><th>If you see</th><th>It means</th></tr></thead>
+      <tbody>
+        <tr><td><code>okta denied</code></td>
+            <td><strong>The per-call check fired.</strong> Okta was consulted on
+                <em>this</em> call. This is the strong claim.</td></tr>
+        <tr><td><code>okta refused to issue a token for</code></td>
+            <td>Refused at connect time. Also correct, but only proves the session could not
+                start.</td></tr>
+        <tr><td><code>invalid_scope ... [task.dispatch]</code></td>
+            <td><strong>Okta&rsquo;s own words</strong>, passed through. The gateway did not
+                compose this.</td></tr>
+      </tbody>
+    </table>
+
+    <p class="hint">
+      Show it live with <code>./scripts/watch-gateway.sh</code>, which filters Bifrost&rsquo;s
+      log to just these lines.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>In the Fleet Ops log: the strongest fact</h2>
+    <p>
+      The refused call <strong>never reached the protected system.</strong> Not blocked there.
+      It never arrived.
+    </p>
+<pre class="log">$ docker logs fleetops-bifrost-demo-fleetops-1 | grep -c "tools/call.*dispatch_vehicle"
+0</pre>
+    <p class="hint">
+      <strong>One trap:</strong> grepping the bare tool name returns <strong>1</strong>, not
+      0, because a startup banner lists the tools served. That line is not a call.
+    </p>
+    <p>Allowed calls plainly did arrive, each with the chain the server read for itself:</p>
+<pre class="log">tools/call list_routes ACCEPTED, scope task.read,
+  chain 0oa135u99u4fFlc8c1d8 (service) &lt;- wlp135utpw8KDW1MD1d8 (ai_agent),
+  jti AT.PDjEsyMJVU6Itae9ZJJgwe3DKT4VTmO8rqSjg32QS6A</pre>
+  </section>
+
+</div>
 <div id="tab-demo" role="tabpanel" aria-labelledby="tab-btn-demo">
 
   <section class="paths-section" aria-labelledby="paths-h">
@@ -263,10 +506,14 @@
      at least talk through the explainer. -->
 <script>
   (function () {
-    var tabs = [
-      { btn: document.getElementById('tab-btn-demo'),  panel: document.getElementById('tab-demo') },
-      { btn: document.getElementById('tab-btn-about'), panel: document.getElementById('tab-about') }
-    ];
+    // Derived from the DOM rather than listed by hand, so adding a tab is one button plus
+    // one panel and this script needs no edit. A tab with a missing panel is skipped rather
+    // than throwing, because a broken explainer must never take the demonstration down.
+    var tabs = [];
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs .tab'), function (btn) {
+      var panel = document.getElementById(btn.getAttribute('aria-controls'));
+      if (panel) tabs.push({ btn: btn, panel: panel });
+    });
     function show(active) {
       tabs.forEach(function (t) {
         var on = t === active;
