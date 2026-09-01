@@ -184,13 +184,34 @@
       Three ways to look at the gateway directly. None of them is this page.
     </p>
 
+    <!-- These are the console's REAL routes, read out of its own JS bundle. Note that the
+         console is a single-page app: it answers 200 on every path and then renders its own
+         404 client-side, so a curl returning 200 proves nothing about whether a route
+         exists. /ui was wrong for exactly that reason and looked verified. -->
     <table class="links">
       <tbody>
         <tr>
-          <td>The gateway&rsquo;s own admin UI</td>
-          <td><a id="bifrost-ui-link" href="http://localhost:8080/ui"
+          <td><strong>The decisions.</strong> One line per tool call, and a refusal in the
+              plugin&rsquo;s own words. Have this open while you demo</td>
+          <td><code>./scripts/watch-gateway.sh</code></td>
+        </tr>
+        <tr>
+          <td>Bifrost&rsquo;s own console</td>
+          <td><a id="bifrost-ui-link" href="http://localhost:8080/workspace/dashboard"
                  target="_blank" rel="noopener noreferrer"
-              >http://localhost:8080/ui</a></td>
+              >http://localhost:8080/workspace/dashboard</a></td>
+        </tr>
+        <tr>
+          <td>The plugin, as the gateway lists it</td>
+          <td><a href="http://localhost:8080/workspace/plugins"
+                 target="_blank" rel="noopener noreferrer"
+              >http://localhost:8080/workspace/plugins</a></td>
+        </tr>
+        <tr>
+          <td>Tool calls, in the console rather than the log</td>
+          <td><a href="http://localhost:8080/workspace/mcp-logs"
+                 target="_blank" rel="noopener noreferrer"
+              >http://localhost:8080/workspace/mcp-logs</a></td>
         </tr>
         <tr>
           <td>Registered clients and their tools, raw JSON</td>
@@ -198,17 +219,13 @@
                  target="_blank" rel="noopener noreferrer"
               >http://localhost:8080/api/mcp/clients</a></td>
         </tr>
-        <tr>
-          <td><strong>The decisions.</strong> One line per tool call, and a refusal in the
-              plugin&rsquo;s own words. Have this open while you demo</td>
-          <td><code>./scripts/watch-gateway.sh</code></td>
-        </tr>
       </tbody>
     </table>
 
     <p class="hint">
-      The first two live on the gateway, so they resolve only where it is reachable, which
-      running locally means <code>localhost:8080</code>.
+      Every URL above is on the gateway itself, so they resolve only where it is reachable,
+      which running locally means <code>localhost:8080</code>. The console has
+      <strong>no login</strong>: anything that can reach the port can reach it.
     </p>
   </section>
 

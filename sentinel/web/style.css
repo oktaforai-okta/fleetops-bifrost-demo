@@ -1,15 +1,111 @@
-/* Colour is used for one thing only: state. Nothing here is decorative, and every state
- * is also written out as text, so the page still works if the colours cannot be told
- * apart. All five state colours clear 4.5:1 against the page background. */
+/* =============================================================================
+   SENTINEL CHAIN OF CUSTODY, presentation stylesheet.
+
+   TWO RULES GOVERN EVERYTHING BELOW. Both are load bearing, not stylistic.
+
+   RULE 1, COLOUR IS EVIDENCE.
+   Every value on this page that is not a run state is strictly ACHROMATIC:
+   r = g = b, no exceptions, including shadows, washes, chips and log tints.
+   The only chromatic pixels on the page belong to the five run states. That is
+   what lets a refusal land: the red in the verdict is the only red anywhere, so
+   it cannot be mistaken for decoration, and decoration can never be mistaken
+   for a state. Every state is also written out as text, and all five clear
+   4.5:1 against both the chassis and a plate.
+   Earlier revisions used tinted neutrals (#f1f2f4, #d8dbe0, #6a737d, and a
+   #fff3bf log highlight). Each of those leaned toward one of the five hues,
+   and the yellow highlight in particular was a decorative near match for
+   in-progress ochre. They are gone.
+
+   RULE 2, TYPE CARRIES PROVENANCE.
+   The whole argument of this page is whose words you are reading, so the
+   typeface says it:
+     sans  = this page talking. Prose, headlines, labels, our sentences.
+     mono  = what a system said or named. Tokens, ids, scopes, tool names,
+             log lines, claim values, and every quoted refusal.
+   The boundary between the two faces IS the provenance boundary, and in the
+   verdict it is drawn as a visible seam. See the verdict section.
+
+   NO NETWORK DEPENDENCY. Both typefaces are vendored next to this file as
+   subset woff2, the same way d3.min.js is vendored, because this is presented
+   on conference wifi that may not work. Nothing here is fetched from a CDN.
+   ============================================================================= */
+
+/* ------------------------------------------------------------------- typefaces */
+
+/* IBM Plex Mono, SIL Open Font License, see plexmono-OFL.txt alongside.
+   The provenance voice. Chosen over the system monospace stack because that
+   stack renders as a different typeface on every presenting laptop, and a demo
+   whose evidence blocks reshape per machine is a demo that looks less credible
+   than it is. Plex was drawn for an engineering company and reads as typed
+   record rather than as code editor. Subset to Latin, 10KB per weight.
+   Its advance width is 0.6em, identical to SF Mono and Consolas, so log blocks
+   and the truncated resource URL in the diagram keep the exact widths app.js
+   computed for them. */
+@font-face {
+  font-family: "Plex Mono Vendored";
+  src: url("plexmono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plex Mono Vendored";
+  src: url("plexmono-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Big Shoulders, SIL Open Font License, see bigshoulders-OFL.txt alongside.
+   Used on exactly two elements, the nameplate and the verdict headline, and
+   nowhere else. It earns its place on a functional argument rather than a
+   stylistic one: it is condensed, so the most important sentence on the page
+   fits on ONE line at 2.9rem where a normal width face would wrap at 2.3rem.
+   All four verdict headlines app.js can produce, the longest being 51
+   characters, fit on one line at 1240px. A wrapped verdict reads as two
+   thoughts. It is never used below 1.6rem, because condensed faces lose at
+   small sizes and projected legibility outranks consistency of voice. */
+@font-face {
+  font-family: "Big Shoulders Vendored";
+  src: url("bigshoulders-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------- tokens */
 
 :root {
-  --bg: #ffffff;
-  --panel: #fbfbfb;
-  --border: #dcdcdc;
-  --border-strong: #b9b9b9;
-  --ink: #1b1b1b;
-  --muted: #5a5a5a;
+  /* THE ACHROMATIC LADDER. Four surface steps, each with a job, so a surface
+     tells you what kind of thing it holds before you read it:
+       chassis  the housing. The page field. Nothing sits directly on it except
+                the nameplate and the tab strip, which read as silkscreened on.
+       plate    a mounted instrument face. Every section is one.
+       lit      a face you look AT. The diagram, quoted evidence, verbatim
+                output from the resource server.
+       well     a recess holding raw machine output. Log blocks, inline chips.
+     This replaces a white page with #fbfbfb panels on it, one percent apart,
+     where no panel edge was visible at projector distance and the whole page
+     read as one flat sheet. */
+  --bg: #e3e3e3;
+  --panel: #fafafa;
+  --lit: #ffffff;
+  --well: #efefef;
 
+  --ink: #131313;
+  --muted: #565656;
+
+  /* Four line weights, each with a job. --plate-edge is the seam where a plate
+     meets the chassis and is darker than the chassis on purpose, so the seam is
+     a machined line rather than a fade. */
+  --border: #d4d4d4;
+  --plate-edge: #c7c7c7;
+  --rule: #c7c7c7;
+  --border-strong: #9c9c9c;
+
+  /* THE FIVE RUN STATES. Unchanged, and deliberately so: these values are
+     verified at 4.5:1 or better against the chassis, a plate, a lit face and a
+     well. Nothing else on the page may use them. */
   --idle: #4a4a4a;
   --idle-fill: #fafafa;
   --in-progress: #7a4e00;
@@ -25,24 +121,32 @@
   --skipped: #5a5a5a;
   --skipped-fill: #f3f3f3;
 
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* The two voices of rule 2. */
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "Plex Mono Vendored", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --display: "Big Shoulders Vendored", var(--sans);
 
-  /* Named properly rather than left to a fallback, so the tab strip and the collapsed
-   * reference blocks share the same rule colour as everything else. */
-  --rule: #dcdcdc;
-  --fg: #1b1b1b;
+  --fg: #131313;
 
-  /* Depth, two steps only: cards at rest, and the one element that should lift off the
-   * page. Neutral grey rather than tinted, so a shadow never reads as a state colour. */
-  --shadow-card: 0 1px 2px rgba(16, 18, 22, .05), 0 1px 3px rgba(16, 18, 22, .05);
-  --shadow-lift: 0 1px 3px rgba(16, 18, 22, .08), 0 6px 16px rgba(16, 18, 22, .09);
+  /* Depth, two steps only: plates at rest, and the one element that should lift
+     off the page. Pure black at low alpha rather than the previous
+     rgba(16, 18, 22, .05), which was faintly blue and therefore broke rule 1.
+     A tinted shadow picks up the surface under it and reads as dirt. */
+  --shadow-card: 0 1px 1px rgba(0, 0, 0, .04), 0 2px 4px rgba(0, 0, 0, .05);
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, .07), 0 8px 20px rgba(0, 0, 0, .10);
 
-  --radius: 9px;
-  --radius-sm: 6px;
+  /* Machined corners, not soft ones. Dropped from 9px and 6px: at 9px on a
+     1240px plate the corner reads as a product card, and this is an instrument
+     face. Small radii also make the concentric mismatch between a plate and the
+     wells inside it invisible, which at 9px it was not. The verdict is the one
+     element that goes to 0, and that break is the signal. */
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-xs: 2px;
 
-  /* Interaction tints. Grey, for the same reason the shadows are grey. */
-  --hover-wash: #f1f2f4;
-  --chip: #f1f2f4;
+  /* Interaction tints. Achromatic, for the same reason the shadows are. */
+  --hover-wash: #ebebeb;
+  --chip: #e8e8e8;
 }
 
 * { box-sizing: border-box; }
@@ -54,7 +158,8 @@ body {
   padding: 0 1.25rem 4rem;
   background: var(--bg);
   color: var(--ink);
-  font: 18px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 18px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 main, .masthead, .footer { max-width: 1240px; margin: 0 auto; }
@@ -67,73 +172,105 @@ main, .masthead, .footer { max-width: 1240px; margin: 0 auto; }
 
 /* One focus treatment for everything interactive. Ink rather than a hue, because every hue
  * on this page means a run state, and offset outward so it stays visible against the dark
- * primary button as well as against white. */
+ * primary button as well as against a plate. */
 :where(button, a, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
 
+/* Links, page wide. Identified by an underline rather than by colour, because
+   every hue on this page means a run state and a blue link sits close enough to
+   --failed slate to be misread as one. An earlier revision used #17457a for
+   button.link, which is exactly that collision. The underline is the oldest and
+   strongest link affordance there is, and it thickens on hover so the target is
+   unmistakable. */
+a {
+  color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 120ms ease, text-decoration-thickness 120ms ease;
+}
+a:hover { text-decoration-thickness: 2px; text-decoration-color: var(--ink); }
+
 /* ------------------------------------------------------------------------- masthead */
 
-/* Trimmed from 2rem. Every pixel spent above the fold is a pixel the flow diagram does not
- * get, and the diagram is the demonstration. */
-.masthead { padding: 1.4rem 0 .8rem; }
+/* Trimmed again. Every pixel spent above the fold is a pixel the flow diagram does not
+ * get, and the diagram is the demonstration. The measured budget is tight: at 1440x900
+ * the diagram bottoms out with room to spare only because the thesis is one line and this
+ * padding is small. Do not grow either. */
+.masthead { padding: 1.05rem 0 .7rem; }
+
+/* THE NAMEPLATE. Condensed industrial uppercase, silkscreened straight onto the
+   chassis with no plate under it, which is how equipment carries its own name.
+   This is one of only two places the display face appears. */
 .masthead h1 {
-  margin: 0 0 .4rem;
-  font-size: 1.75rem; line-height: 1.2;
-  letter-spacing: -0.02em;
+  margin: 0 0 .45rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 3.2vw, 2.55rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .015em;
 }
-.thesis { margin: 0; max-width: 62ch; color: var(--muted); }
-/* The claim of the whole page. It gets full ink weight inside an otherwise muted line, so
+
+/* The claim of the whole page, and deliberately ONE line at 1440px. The old 62ch
+   measure wrapped it to two, which cost 28px of the diagram's height and split a
+   single thought in half. A long measure is the wrong default for a paragraph and
+   the right one for a lede the eye reads once. */
+.thesis { margin: 0; max-width: 116ch; color: var(--muted); }
+/* The claim inside the claim. It gets full ink weight inside an otherwise muted line, so
  * the eye picks it up before anything else in the header. */
-.thesis strong { color: var(--ink); }
+.thesis strong { color: var(--ink); font-weight: 700; }
 
 /* ------------------------------------------------------------------------- controls */
 
 .controls {
   display: flex; align-items: center; gap: .85rem; flex-wrap: wrap;
-  padding: .85rem 0 1.1rem;
+  padding: .7rem 0 .9rem;
 }
 
 button.primary, button.secondary {
-  font: inherit; font-weight: 650;
+  font: inherit; font-weight: 700;
   padding: .6rem 1.25rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease,
-              box-shadow 140ms ease, transform 90ms ease;
+              box-shadow 140ms ease, transform 90ms cubic-bezier(0.2, 0, 0, 1);
 }
 button.primary {
-  color: #ffffff; background: #1b1b1b;
-  border: 1px solid #1b1b1b;
-  box-shadow: 0 1px 2px rgba(16, 18, 22, .18);
+  color: var(--lit); background: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .20);
 }
 button.primary:hover:not(:disabled) {
   background: #333333;
-  box-shadow: 0 2px 6px rgba(16, 18, 22, .22);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .24);
 }
 /* Pressed. The button moves down onto the page rather than up off it, which is the only
- * direction a press has ever gone. */
+ * direction a press has ever gone, and it takes a 4 percent squeeze with it so the press
+ * is felt as well as seen. */
 button.primary:active:not(:disabled) {
   background: #0d0d0d;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.96);
 }
 
 /* The refusal run is a peer action, not a lesser one, so it is a full-size button. It is
  * outlined rather than filled only so the granted run reads as the default path. */
 button.secondary {
-  color: var(--ink); background: #ffffff;
+  color: var(--ink); background: var(--lit);
   border: 2px solid var(--border-strong);
 }
 button.secondary:hover:not(:disabled) {
   border-color: var(--ink);
-  box-shadow: 0 1px 3px rgba(16, 18, 22, .12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
 }
 button.secondary:active:not(:disabled) {
   background: var(--hover-wash);
-  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .14);
-  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .16);
+  transform: translateY(1px) scale(0.96);
 }
 button.secondary code { font-size: .9em; background: none; padding: 0; }
 
@@ -141,23 +278,35 @@ button.primary:disabled, button.secondary:disabled {
   opacity: .5; cursor: default; box-shadow: none;
 }
 
-.status { margin: 0; color: var(--muted); }
-.status.busy { color: var(--in-progress); font-weight: 600; }
-.status.good { color: var(--issued); font-weight: 600; }
-.status.bad { color: var(--refused); font-weight: 600; }
+/* The status line is the page reporting on itself, so it takes the plate voice
+   rather than prose: small, lettered out, and legible as a readout from across a
+   room even when it says nothing more than "not run yet". */
+.status {
+  margin: 0;
+  font-size: .82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted);
+}
+.status.busy { color: var(--in-progress); }
+.status.good { color: var(--issued); }
+.status.bad { color: var(--refused); }
 
 /* ---------------------------------------------------------------------- path chooser */
 
-.paths-section { max-width: 1240px; margin: 0 auto; padding-top: 1.1rem; }
+.paths-section { max-width: 1240px; margin: 0 auto; padding-top: .85rem; }
 .paths { display: flex; gap: .75rem; flex-wrap: wrap; }
 
+/* A mounted plate, and deliberately a QUIET one. In the previous revision this
+   carried an 8px ink bar and was the loudest thing on the page, louder than the
+   verdict and the diagram, which inverted the hierarchy: a chooser was shouting
+   over the answer. It is a chooser. */
 .path-button {
   font: inherit; text-align: left; cursor: pointer;
   flex: 1 1 22rem;
-  display: flex; flex-direction: column; gap: .2rem;
-  padding: .8rem 1rem;
-  background: #ffffff; color: var(--ink);
-  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; gap: .15rem;
+  padding: .7rem .95rem;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--plate-edge); border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
@@ -165,41 +314,93 @@ button.primary:disabled, button.secondary:disabled {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-lift);
 }
-/* The selected demonstration. Weight and a left bar rather than colour, since colour on
- * this page means run state and this is not a run state. */
+/* The selected demonstration. Weight and a left rail rather than colour, since colour on
+ * this page means run state and this is not a run state.
+ * Narrowed from an 8px ink rail on a white fill to a 3px muted rail on the same plate as
+ * the unselected state. The old treatment made the CHOOSER the brightest and heaviest
+ * object above the fold, brighter than the two buttons you press and heavier than the
+ * diagram, and when only one path is offered it was shouting a selection nobody made.
+ * A rail plus a stronger edge is still unmistakable when both paths are shown. */
 .path-button.selected {
-  border-color: var(--ink); border-left-width: 8px;
-  background: var(--panel);
+  border-color: var(--border-strong); border-left: 3px solid var(--muted);
   box-shadow: var(--shadow-card);
 }
 .path-button:disabled { opacity: .6; cursor: default; box-shadow: none; }
-.path-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+.path-name { font-size: .95rem; font-weight: 700; letter-spacing: -0.01em; }
 .path-note { font-size: .85rem; color: var(--muted); }
 
 /* -------------------------------------------------------------------------- verdict */
 
-/* The one-line answer, sized to be read from the back of a room. Colour carries state
- * only; the headline says the same thing in words. */
+/* ==========================  THE DETERMINATION PLATE  ==========================
+   THE SIGNATURE ELEMENT OF THIS PAGE, and the one place its boldness is spent.
+   Everything else on this page is a rounded plate mounted on the chassis. This
+   is the only squared one, and the only one banded across its full width in a
+   state colour. The break in the radius language is the signal: a readout and a
+   determination are different kinds of object, and a determination is bounded,
+   banded and signed.
+
+   THREE MOVES, in order of how hard they land:
+
+   1. A 9px state banner across the entire top edge. At 1240px that is a great
+      deal of red, and it is meant to be. This is the answer, so it should be
+      the loudest thing on the page by a wide margin, readable as a decision
+      before a single word is read.
+
+   2. The headline in the condensed display face at 2.9rem, on one line. See the
+      Big Shoulders note at the top of this file: condensed is what buys the
+      extra size without wrapping, and one line is one thought.
+
+   3. THE SEAM. A hard rule across the plate marking exactly where this page's
+      own sentence stops and the issuing authority's reproduced words begin.
+      Above it, sans, our voice. Below it, mono, theirs. That switch is rule 2
+      of this file doing its job at the moment it matters most: a sceptical
+      reader can SEE where our account ends. It is the reason a refusal here is
+      hard to argue with, and it appears only when there is something to quote,
+      because a granted run has no reproduced words and therefore no seam.
+   ============================================================================== */
 .verdict {
   max-width: 1240px; margin: 0 auto 1.1rem;
-  border: 2px solid var(--border-strong); border-left-width: 12px;
-  border-radius: var(--radius); padding: 1.05rem 1.4rem;
-  background: #ffffff;
+  border: 2px solid var(--border-strong);
+  border-top-width: 9px;
+  border-radius: 0;
+  padding: 1.15rem 1.45rem 1.35rem;
+  background: var(--panel);
   /* The one element allowed to lift off the page, because it is the answer. */
   box-shadow: var(--shadow-lift);
-  /* Runs once, on insertion: app.js builds this box fresh for every run, so a short rise
-   * marks the arrival of a new answer. 180ms, nothing to wait for. */
-  animation: verdict-in 180ms ease-out both;
+  /* Runs once, on insertion: app.js builds this box fresh for every run, so the
+     plate seats into place rather than fading in. 200ms, nothing to wait for. */
+  animation: plate-seat 200ms cubic-bezier(0.2, 0, 0, 1) both;
 }
-@keyframes verdict-in {
-  from { opacity: 0; transform: translateY(-5px); }
+/* Two semantic chunks, staggered, because the sequence carries meaning: our
+   claim arrives, and then the evidence for it. 110ms apart, which is felt as
+   deliberate rather than slow. */
+.verdict-headline, .verdict-sub {
+  animation: chunk-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.verdict-quote-label, .verdict-quote {
+  animation: chunk-in 200ms cubic-bezier(0.2, 0, 0, 1) 110ms both;
+}
+@keyframes plate-seat {
+  from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
 }
-.verdict-headline {
-  margin: 0; font-size: 1.9rem; font-weight: 750;
-  line-height: 1.2; letter-spacing: -0.02em;
+@keyframes chunk-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
 }
-.verdict-sub { margin: .5rem 0 0; max-width: 88ch; color: var(--ink); }
+
+.verdict-headline {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+  line-height: 1.02;
+  letter-spacing: .005em;
+}
+.verdict-sub {
+  margin: .55rem 0 0; max-width: 84ch; color: var(--ink);
+  font-size: 1.05rem; line-height: 1.5;
+}
 
 .verdict-issued { border-color: var(--issued); background: var(--issued-fill); }
 .verdict-issued .verdict-headline { color: var(--issued); }
@@ -213,32 +414,64 @@ button.primary:disabled, button.secondary:disabled {
 .verdict-unexpected .verdict-headline { color: var(--in-progress); }
 .verdict-unknown { border-color: var(--idle); background: var(--idle-fill); }
 
+/* THE SEAM. Achromatic on purpose: it is this page's own dividing line, not a
+   state, and a state coloured rule here would be decoration using a reserved
+   hue. Two pixels, hard, full inner width. */
 .verdict-quote-label {
-  margin: .9rem 0 .3rem; font-size: .82rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+  margin: 1.15rem 0 .55rem;
+  padding-top: .95rem;
+  border-top: 2px solid var(--border-strong);
+  font-size: .8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--muted);
 }
+/* Below the seam: a lit face, because this is the evidence you look at, with a
+   custody rail down its left edge in the state colour. */
 .verdict-quote {
-  background: #ffffff; border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm); padding: .7rem .9rem;
-  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .05);
+  background: var(--lit);
+  border: 1px solid var(--border-strong);
+  border-left: 5px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  padding: .85rem 1rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .05);
 }
-/* Okta's own words, quoted at a size that survives a projector. */
+.verdict-refused .verdict-quote { border-left-color: var(--refused); }
+.verdict-no-decision .verdict-quote { border-left-color: var(--failed); }
+.verdict-unexpected .verdict-quote { border-left-color: var(--in-progress); }
+.verdict-issued .verdict-quote { border-left-color: var(--issued); }
+
+/* The authority's own word, at near headline scale. Raised from 1.25rem, which
+   was half the size of our sentence about it: on a page whose entire argument is
+   "do not take our word for it, here is theirs", the reproduced word has to
+   carry as much weight as the claim. It is the proof. */
 .verdict-code {
-  font-family: var(--mono); font-size: 1.25rem; font-weight: 700;
-  color: var(--refused); overflow-wrap: anywhere;
+  font-family: var(--mono); font-size: clamp(1.3rem, 2.4vw, 1.85rem);
+  font-weight: 700; line-height: 1.15;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
+/* Scoped per outcome. Previously this was hard coded to --refused for every
+   verdict kind, so a run that reached NO decision displayed its error code in
+   denial red, contradicting the --failed comment above by attributing to Okta
+   something Okta was never asked. */
+.verdict-refused .verdict-code { color: var(--refused); }
+.verdict-no-decision .verdict-code { color: var(--failed); }
+.verdict-unexpected .verdict-code { color: var(--in-progress); }
 .verdict-desc {
-  font-family: var(--mono); font-size: 1.05rem; margin-top: .35rem;
-  overflow-wrap: anywhere; line-height: 1.45;
+  font-family: var(--mono); font-size: 1.05rem; margin-top: .5rem;
+  overflow-wrap: anywhere; line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------- panels */
 
+/* A mounted instrument face. The plate is lighter than the chassis and its edge is
+   darker than the chassis, so the seam between them is a machined line at any
+   projection distance. That value step is what the previous #fbfbfb on #ffffff
+   could not do. */
 .panel {
-  border: 1px solid var(--border);
+  border: 1px solid var(--plate-edge);
   border-radius: var(--radius);
   background: var(--panel);
-  padding: 1.1rem 1.3rem;
+  padding: 1.05rem 1.4rem 1.2rem;
   margin-bottom: 1.1rem;
   box-shadow: var(--shadow-card);
 }
@@ -246,8 +479,8 @@ button.primary:disabled, button.secondary:disabled {
  * verdict and the diagram stay the two loudest things on the page. */
 .panel > h2 {
   margin: 0 0 .45rem;
-  font-size: .82rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .09em;
+  font-size: .8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em;
   color: var(--muted);
 }
 .hint { margin: .25rem 0; color: var(--muted); font-size: .875rem; }
@@ -256,21 +489,25 @@ button.primary:disabled, button.secondary:disabled {
 
 /* -------------------------------------------------------------------------- diagram */
 
-/* A hairline frame with no padding: the SVG reads as a canvas rather than as loose artwork,
- * and it costs 2px of height, which matters because the diagram must stay above the fold. */
+/* A lit face inset into the plate, with no padding: the SVG reads as the instrument
+   itself rather than as loose artwork, and it costs 2px of height, which matters because
+   the diagram must stay above the fold. */
 #diagram-wrap {
   overflow-x: auto;
-  background: #ffffff;
+  background: var(--lit);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
 #chain { width: 100%; min-width: 1040px; height: auto; display: block; }
 
 .node, .edge { cursor: pointer; }
-.node:focus-visible, .edge:focus-visible { outline: 3px solid #1b1b1b; outline-offset: 2px; }
+.node:focus-visible, .edge:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-/* Diagram type is sized for projector distance. The name is the largest thing in a box
- * because it is what identifies the principal; the id lives in the detail panel, not here. */
+/* DIAGRAM TYPE SIZES ARE FROZEN. app.js computes every box geometry and truncates the
+ * resource URL by character count against these exact sizes, so changing one overflows a
+ * box. Colour and stroke are fair game here; font-size and font-family are not.
+ * The name is the largest thing in a box because it is what identifies the principal;
+ * the id lives in the detail panel, not here. */
 .node-box { fill: var(--idle-fill); stroke: var(--idle); stroke-width: 1; }
 .node-role { font-size: 13px; letter-spacing: .1em; font-weight: 650; fill: var(--muted); }
 .node-name { font-size: 21px; font-weight: 700; fill: var(--ink); }
@@ -342,7 +579,7 @@ button.primary:disabled, button.secondary:disabled {
 }
 .legend li { display: flex; align-items: center; gap: .45rem; }
 .swatch {
-  width: 15px; height: 15px; border-radius: 3px; display: inline-block;
+  width: 15px; height: 15px; border-radius: var(--radius-xs); display: inline-block;
   border: 2px solid var(--idle); background: var(--idle-fill);
   flex: 0 0 auto;
 }
@@ -366,10 +603,12 @@ button.primary:disabled, button.secondary:disabled {
   transition: background-color 120ms ease;
 }
 .step-button:hover { background: var(--hover-wash); }
-.step-button:hover .step-label { text-decoration: underline; }
+.step-button:hover .step-label { text-decoration: underline; text-underline-offset: 3px; }
+/* The state word, in the plate voice. Fixed width in ch so the labels beside it
+   line up into a column, which is what makes a run readable as a log. */
 .step-state {
-  font-size: .82rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .05em; min-width: 9.5ch;
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; min-width: 10.5ch;
 }
 .step.state-idle .step-state { color: var(--idle); }
 .step.state-in_progress .step-state { color: var(--in-progress); }
@@ -380,44 +619,52 @@ button.primary:disabled, button.secondary:disabled {
 
 /* --------------------------------------------------------------------- detail panel */
 
-#detail h3 { margin: .25rem 0 .5rem; font-size: 1.02rem; }
+#detail h3 { margin: .25rem 0 .5rem; font-size: 1.02rem; letter-spacing: -0.01em; }
 #detail h4 { margin: 1rem 0 .35rem; font-size: .95rem; }
 #detail h5 { margin: .9rem 0 .35rem; font-size: .9rem; }
-#detail h6 { margin: .9rem 0 .3rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+#detail h6 {
+  margin: .9rem 0 .3rem; font-size: .8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--muted);
+}
 
 .kv { margin: .3rem 0; overflow-wrap: anywhere; }
-/* Inline claim values and identifiers. A faint chip separates them from prose without
+/* Inline claim values and identifiers. A recessed well separates them from prose without
  * relying on colour, which on this page always means state. */
 code {
   font-family: var(--mono); font-size: .85em;
-  background: var(--chip); border-radius: 3px;
+  background: var(--well); border-radius: var(--radius-xs);
   padding: .08em .3em;
 }
-/* No chip inside blocks that are already framed, or inside a button label. */
+/* No well inside blocks that are already recessed, or inside a button label. */
 pre code, .badge code, button code, .profile-chip code { background: none; padding: 0; }
 
-/* Log and token output. Bumped from .8rem so nothing here falls under 13px on a projector,
- * and given breathing room between lines, because these blocks get read aloud. */
+/* Log and token output, recessed into the plate. Bumped from .8rem so nothing here falls
+ * under 13px on a projector, and given breathing room between lines, because these blocks
+ * get read aloud. */
 pre {
   font-family: var(--mono); font-size: .85rem; line-height: 1.5;
-  background: #f5f6f7; border: 1px solid var(--border);
+  background: var(--well); border: 1px solid var(--border);
   padding: .65rem .75rem; border-radius: var(--radius-sm);
   overflow-x: auto; margin: .35rem 0;
   tab-size: 2;
-  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .04);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .04);
 }
 
 button.link {
-  font: inherit; color: #17457a; background: none; border: none;
-  padding: 0; cursor: pointer; text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 120ms ease;
+  font: inherit; color: var(--ink); background: none; border: none;
+  padding: 0; cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease, text-decoration-thickness 120ms ease;
 }
-button.link:hover { color: var(--ink); }
+button.link:hover { text-decoration-thickness: 2px; text-decoration-color: var(--ink); }
 
+/* A lit face inside a plate, with a state rail. */
 .card {
-  border: 1px solid var(--border-strong); border-left-width: 5px;
-  border-radius: var(--radius-sm); background: #ffffff;
+  border: 1px solid var(--border); border-left: 5px solid var(--border-strong);
+  border-radius: var(--radius-sm); background: var(--lit);
   padding: .8rem 1rem; margin: .9rem 0;
   box-shadow: var(--shadow-card);
 }
@@ -428,11 +675,11 @@ button.link:hover { color: var(--ink); }
 .card.state-failed { border-left-color: var(--failed); }
 .card.state-skipped { border-left-color: var(--skipped); }
 
-/* .78rem rather than .7rem: 12.6px was the smallest thing on the page and this is read from
+/* .8rem rather than .7rem: 12.6px was the smallest thing on the page and this is read from
  * the back of a room. */
 .badge {
-  font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  border: 1px solid currentColor; border-radius: 3px; padding: .05rem .4rem;
+  font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  border: 1px solid currentColor; border-radius: var(--radius-xs); padding: .05rem .4rem;
   vertical-align: .1em; white-space: nowrap;
 }
 .card.state-idle .badge { color: var(--idle); }
@@ -444,7 +691,7 @@ button.link:hover { color: var(--ink); }
 
 .error-box {
   border: 1px solid var(--refused); background: var(--refused-fill);
-  border-radius: 4px; padding: .6rem .8rem; margin: .7rem 0;
+  border-radius: var(--radius-sm); padding: .6rem .8rem; margin: .7rem 0;
 }
 .error-box h5 { margin-top: 0; color: var(--refused); }
 
@@ -454,12 +701,13 @@ button.link:hover { color: var(--ink); }
 
 .token-box { margin-top: .8rem; }
 
-/* What the upstream resource server said, verbatim. Monospace and unstyled beyond that:
- * the whole value of this block is that it is not this page's words. */
+/* What the upstream resource server said, verbatim. A lit face rather than a recessed
+ * well, because this is evidence you look at rather than background output, and unstyled
+ * beyond that: the whole value of this block is that it is not this page's words. */
 .resource-box { margin-top: .9rem; }
 pre.verbatim {
-  font-size: .95rem; line-height: 1.45;
-  background: #ffffff; border: 1px solid var(--border-strong);
+  font-size: .95rem; line-height: 1.5;
+  background: var(--lit); border: 1px solid var(--border-strong);
   white-space: pre-wrap;
 }
 /* The server's account of the token it received. Given the weight of a finding, because
@@ -472,7 +720,7 @@ pre.verbatim.attribution {
 /* The act paragraphs are the honesty of the page, so they are given real weight rather
  * than being tucked into a footnote. */
 .act-present, .act-absent {
-  border-radius: 4px; padding: .6rem .8rem; margin: .6rem 0; max-width: 82ch;
+  border-radius: var(--radius-sm); padding: .6rem .8rem; margin: .6rem 0; max-width: 82ch;
 }
 .act-present { border: 1px solid var(--issued); background: var(--issued-fill); }
 .act-absent { border: 1px solid var(--in-progress); background: var(--in-progress-fill); }
@@ -492,18 +740,18 @@ pre.verbatim.attribution {
 
 .chain-card {
   flex: 1 1 15rem; min-width: 14rem;
-  border: 2px solid var(--border-strong); border-radius: var(--radius-sm);
-  padding: .75rem .95rem; background: #ffffff;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: .75rem .95rem; background: var(--lit);
   box-shadow: var(--shadow-card);
 }
-/* Role is distinguished by border weight and by the words in the card, not by hue: the
+/* Role is distinguished by rail weight and by the words in the card, not by hue: the
  * two are different positions in a chain, not two different states. */
-.chain-card.role-subject { border-left-width: 8px; border-left-color: var(--ink); }
-.chain-card.role-actor { border-left-width: 8px; border-left-color: var(--muted); }
+.chain-card.role-subject { border-left: 6px solid var(--ink); }
+.chain-card.role-actor { border-left: 6px solid var(--muted); }
 
 .chain-role {
-  font-size: .82rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--muted);
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--muted);
 }
 .chain-name { font-size: 1.25rem; font-weight: 700; margin: .2rem 0 .35rem; line-height: 1.25; }
 .chain-profile { margin: .2rem 0 .4rem; display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; }
@@ -523,17 +771,17 @@ pre.verbatim.attribution {
 /* sub_profile, wherever it appears. Monospace because it is a claim value, verbatim. */
 .profile-chip {
   font-family: var(--mono); font-size: .95rem; font-weight: 700;
-  border: 2px solid var(--ink); border-radius: 3px;
-  padding: .05rem .4rem; background: #ffffff;
+  border: 2px solid var(--ink); border-radius: var(--radius-xs);
+  padding: .05rem .4rem; background: var(--lit);
 }
-.profile-chip.small { font-size: .82rem; font-weight: 600; border-width: 1px; margin-left: .4rem; }
+.profile-chip.small { font-size: .82rem; font-weight: 700; border-width: 1px; margin-left: .4rem; }
 
 /* A friendly name offered next to a raw id in the claims table. The id stays primary. */
-.id-name { font-weight: 650; }
+.id-name { font-weight: 700; }
 
 .chain-note {
-  border: 1px solid var(--border-strong); border-radius: 4px;
-  background: var(--panel); padding: .6rem .8rem; margin: .6rem 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--well); padding: .6rem .8rem; margin: .6rem 0;
   max-width: 88ch; font-size: .95rem;
 }
 
@@ -541,10 +789,15 @@ table.claims { border-collapse: collapse; width: 100%; margin: .3rem 0 .6rem; }
 table.claims th, table.claims td {
   text-align: left; vertical-align: top;
   border-bottom: 1px solid var(--border);
-  padding: .3rem .5rem .3rem 0;
+  padding: .35rem .5rem .35rem 0;
   font-weight: 400;
 }
-table.claims th { width: 12ch; white-space: nowrap; }
+/* The claim name is a field name from a token, so it is mono under rule 2, which also
+   lines the column up without needing a rule between the columns. */
+table.claims th {
+  width: 14ch; white-space: nowrap;
+  font-family: var(--mono); font-size: .85rem; color: var(--muted);
+}
 table.claims td { overflow-wrap: anywhere; }
 table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
 
@@ -564,22 +817,22 @@ table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
    the fold, and the diagram is the demonstration. */
 details.reference {
   margin-top: 1rem;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--border);
   padding-top: 0.6rem;
 }
-/* These now fold the long JSON samples in the logs tab, so a summary has to read as a
-   control rather than as a caption. It gets a bordered chip, which is the cheapest thing
-   that says "press me" without an icon or a colour. The native disclosure marker is kept:
-   it is the part a reader already recognises. */
+/* These fold the long JSON samples in the logs tab, so a summary has to read as a control
+   rather than as a caption. It gets a lit chip raised off the plate, which is the cheapest
+   thing that says "press me" without an icon or a colour. The native disclosure marker is
+   kept: it is the part a reader already recognises. */
 details.reference > summary {
   cursor: pointer;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--fg);
   padding: 0.35rem 0.7rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: #ffffff;
+  background: var(--lit);
   width: fit-content;
   box-shadow: var(--shadow-card);
   transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
@@ -591,7 +844,7 @@ details.reference > summary:hover {
 }
 details.reference > summary:active {
   background: var(--hover-wash);
-  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .14);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .16);
 }
 details.reference[open] > summary { margin-bottom: 0.6rem; }
 
@@ -610,25 +863,26 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    To show it in the UI again, delete this one rule. */
 .path-button[data-path="okta"] { display: none; }
 
-/* Tab strip. The demonstration, plus the panels a presenter reaches for when asked what a
-   party IS, what the plugin does, or what actually went over the wire. The explainers exist
-   because the first question from a non-technical viewer is "what is that box", and answering
-   it inside the demo view is what made the demo view too wordy in the first place.
+/* Tab strip, cut as a trough into the chassis. The demonstration, plus the panels a
+   presenter reaches for when asked what a party IS, what the plugin does, or what actually
+   went over the wire. The explainers exist because the first question from a non-technical
+   viewer is "what is that box", and answering it inside the demo view is what made the demo
+   view too wordy in the first place.
 
-   Underline tabs rather than folder tabs: the selected marker is a 3px bar drawn ON the
-   strip's own rule, so the strip stays one clean line however many tabs get added. */
+   Underline tabs rather than folder tabs: the selected marker is a bar drawn ON the strip's
+   own rule, so the strip stays one clean line however many tabs get added. */
 .tabs {
   display: flex;
   gap: 0.15rem;
-  margin-top: 0.9rem;
-  border-bottom: 1px solid var(--rule);
+  margin-top: 0.75rem;
+  border-bottom: 2px solid var(--rule);
   flex-wrap: wrap;
 }
 .tabs .tab {
   position: relative;
   background: none;
   border: none;
-  padding: 0.55rem 1rem 0.6rem;
+  padding: 0.5rem 1rem 0.55rem;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   font: inherit;
   /* This is the primary navigation on the page now, four panels deep, so it is sized as
@@ -640,14 +894,15 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
   white-space: nowrap;
   transition: color 140ms ease, background-color 140ms ease;
 }
-/* The selected marker. Sits at -1px so it covers the strip's rule rather than stacking on
-   top of it, which is what makes the tab read as attached to the panel below. */
+/* The selected marker. Sits at -2px so it covers the strip's rule rather than stacking on
+   top of it, which is what makes the tab read as attached to the panel below. Raised to
+   4px, because on a projector the previous 3px marker at this width was easy to miss. */
 .tabs .tab::after {
   content: "";
   position: absolute;
-  left: 0.5rem; right: 0.5rem; bottom: -1px;
-  height: 3px;
-  border-radius: 2px 2px 0 0;
+  left: 0.5rem; right: 0.5rem; bottom: -2px;
+  height: 4px;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   background: transparent;
   transition: background-color 140ms ease;
 }
@@ -715,7 +970,7 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    The demo tab appears in none of these selectors. Its flow diagram is the demonstration and
    is the one thing on this page that has earned all 1240px. */
 
-/* CARDS STAY FULL WIDTH, matching the demo tab and everything else on the page.
+/* PLATES STAY FULL WIDTH, matching the demo tab and everything else on the page.
 
    An earlier version of this file shrank these cards to fit their prose, so the empty space
    became symmetric page margin. That is defensible typography and it was the wrong call
@@ -723,7 +978,7 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    stops short of the page looks like a box that failed to load rather than like a decision.
    Consistent edges win.
 
-   So the dead space is solved from the other side instead. The cards fill the width and the
+   So the dead space is solved from the other side instead. The plates fill the width and the
    CONTENT is what changes: prose gets a wider measure, and multi-paragraph runs go into
    columns rather than leaving a third of the card empty. */
 
@@ -792,10 +1047,10 @@ table.facts td:last-child { padding-right: 0; }
 /* The header row is a label for its column, not content, so it is lettered out and small.
    The heavier rule underneath it is the only strong line in the table. */
 table.facts thead th {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.12em;
   color: var(--muted);
   padding-bottom: 0.45rem;
   border-bottom: 2px solid var(--border-strong);
@@ -803,7 +1058,7 @@ table.facts thead th {
 }
 
 table.facts tbody td { border-bottom: 1px solid var(--border); }
-/* No trailing rule: the panel edge already closes the table. */
+/* No trailing rule: the plate edge already closes the table. */
 table.facts tbody tr:last-child td { border-bottom: none; }
 
 /* The first column is a short label or a party name. A preferred width keeps it from taking
@@ -821,9 +1076,63 @@ table.facts:has(thead th:nth-child(3)) thead th:first-child { width: 16%; }
    rather than inheriting a muted cell colour. */
 table.facts strong { color: var(--ink); }
 
+/* ------------------------------------------------------------------- link tables */
+
+/* table.links is a LIST OF ADDRESSES, not a data grid, so it is built to read as one:
+   rules between the rows only and never between the columns, generous row rhythm so each
+   entry is a discrete thing, and the two columns in different voices rather than the same
+   voice at two widths. Under rule 2 the description is ours and set in sans, and the
+   address is a machine location and set in mono, so the pairing reads as label then value.
+
+   The demo is meant to be taken away and run, so the thing a viewer most often wants here
+   is to COPY the address. That is why the URL is written out in full rather than hidden
+   behind a button label, why it is set at .95rem rather than shrunk, and why its cell has
+   real vertical padding: a comfortable triple click target. */
+table.links {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.7rem 0 0.35rem;
+  table-layout: auto;
+}
+table.links td {
+  vertical-align: baseline;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+/* The plate edge already opens the list. */
+table.links tr:first-child td { border-top: none; padding-top: 0.3rem; }
+
+table.links td:first-child {
+  width: 31%;
+  padding-right: 1.7rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+table.links td:first-child strong { color: var(--ink); }
+
+table.links td:last-child {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  /* A localhost URL is short and a github URL is long. Breaking anywhere is correct for an
+     address, where there is no syllable to protect, and it is what keeps the cell inside
+     the plate on a narrow screen. */
+  overflow-wrap: anywhere;
+}
+/* The one row whose second column is a shell command rather than a link. It is already
+   mono from the cell, so the inline well would double up on the cell's own framing. */
+table.links td:last-child > code { background: none; padding: 0; font-size: 1em; }
+
+/* Below this the label column cannot hold a phrase and leave the address room, so the
+   label narrows and the address takes the space. */
+@media (max-width: 700px) {
+  table.links td:first-child { width: 34%; padding-right: 1rem; font-size: 0.9rem; }
+  table.links td:last-child { font-size: 0.88rem; }
+}
+
 /* -------------------------------------------------------------- sample machine output */
 
-/* JSON and log lines, verbatim. A tinted panel and a left bar so it reads as something a
+/* JSON and log lines, verbatim. A recessed well and a left rail so it reads as something a
    machine emitted rather than as the page talking, and it scrolls sideways rather than
    wrapping: a token id broken across two lines cannot be read out loud or compared by eye. */
 pre.log {
@@ -833,24 +1142,28 @@ pre.log {
   white-space: pre;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  background: #f5f6f7;
-  border: 1px solid var(--border-strong);
-  border-left: 4px solid var(--border-strong);
+  background: var(--well);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 0.8rem 0.95rem;
   margin: 0.5rem 0 0.9rem;
   tab-size: 2;
-  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .05);
 }
 pre.log code { background: none; padding: 0; font-size: inherit; }
 
 /* ------------------------------------------------------------------- reduced motion */
 
-/* Everything above is a 90 to 180ms state change, so there is nothing to preserve when a
- * viewer has asked for less movement. Focus outlines and every colour are untouched. */
+/* Everything above is a 90 to 200ms state change, so there is nothing to preserve when a
+ * viewer has asked for less movement. Focus outlines and every colour are untouched.
+ * animation-delay is zeroed as well as duration: the verdict staggers its two chunks by
+ * 110ms, and without this a reduced-motion viewer would watch the evidence arrive late
+ * instead of not watching it arrive at all. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
@@ -869,33 +1182,43 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
   flex-wrap: wrap;
   padding: 0.6rem 0.75rem;
   margin-bottom: 0.5rem;
-  border: 1px solid var(--rule, #d8dbe0);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--plate-edge);
+  border-radius: var(--radius);
+  /* A lit face, brighter than the plate the chooser above it sits on, because these are
+     the two things on the page you actually press. Brightness tracks actionability here:
+     lit and pressable, plate and inert. */
+  background: var(--lit);
+  box-shadow: var(--shadow-card);
 }
 
-/* A left edge in the outcome's colour, so allowed and refused are distinguishable at a
-   glance and from across a room, before any text is read. */
-.action#action-grant { border-left: 4px solid #1a7f4b; }
-.action#action-deny  { border-left: 4px solid #b3261e; }
+/* A left rail in the outcome's colour, so allowed and refused are distinguishable at a
+   glance and from across a room, before any text is read. Both were previously ad hoc
+   greens and reds (#1a7f4b, #b3261e) a shade off the state tokens, which put four greens
+   and reds on one page. They are the state tokens now. */
+.action#action-grant { border-left: 5px solid var(--issued); }
+.action#action-deny  { border-left: 5px solid var(--refused); }
 
+/* The outcome is a status, not a sentence, so it takes the plate voice like every other
+   state label on the page. */
 .action-verdict {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   white-space: nowrap;
 }
-.action-verdict.allow  { color: #12653b; }
-.action-verdict.refuse { color: #8c1d18; }
+.action-verdict.allow  { color: var(--issued); }
+.action-verdict.refuse { color: var(--refused); }
 
 /* The tool name is the thing a customer reads off the screen, so it gets real presence
    rather than being small print inside a button. */
 .action-tool {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mono);
   font-size: 0.9rem;
   padding: 0.2rem 0.45rem;
-  border-radius: 5px;
-  background: #f1f3f5;
-  color: #1f2328;
+  border-radius: var(--radius-xs);
+  background: var(--well);
+  color: var(--ink);
   overflow-wrap: anywhere;
 }
 
@@ -945,11 +1268,11 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
 /* Both Run buttons get the same treatment. They do the same kind of thing, run this row, so
    an outlined one beside a filled one implied that the refusal run was the lesser of the two,
    or the riskier. The row already says which outcome it is, in the verdict label's colour and
-   in its coloured left edge, so the button does not repeat it and is deliberately not tinted
+   in its coloured left rail, so the button does not repeat it and is deliberately not tinted
    per outcome: two coloured buttons would make the pair read as a traffic light.
 
    Solid wins, because it is the treatment already on screen and it carries further on a
-   projector. White on #1b1b1b is the same contrast the outlined button had, the other way up.
+   projector. White on ink is the same contrast the outlined button had, the other way up.
 
    Kept on the id rather than folded into .secondary: .secondary still means an outlined
    button, there is simply no longer a secondary action in this row. transform is left to the
@@ -957,15 +1280,15 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
    left to the shared :focus-visible rule, which is already offset outward to clear a dark
    button. */
 #run-deny {
-  color: #ffffff;
-  background: #1b1b1b;
-  border: 1px solid #1b1b1b;
-  box-shadow: 0 1px 2px rgba(16, 18, 22, .18);
+  color: var(--lit);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .20);
 }
 #run-deny:hover:not(:disabled) {
   background: #333333;
-  border-color: #1b1b1b;
-  box-shadow: 0 2px 6px rgba(16, 18, 22, .22);
+  border-color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .24);
 }
 #run-deny:active:not(:disabled) {
   background: #0d0d0d;
@@ -977,29 +1300,55 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
 #run-deny:disabled { box-shadow: none; }
 
 /* Repo links read as links, not as inert code. The demo is meant to be taken away and
-   run, so these are a real part of the pitch rather than decoration. */
-#tab-plugin a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-#tab-plugin a:hover code { background: #e7eaee; }
+   run, so these are a real part of the pitch rather than decoration. Colour is not
+   available to say "link" here, for the reason given on the base anchor rule, so the
+   underline does the whole job. */
+#tab-plugin a {
+  color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 4px;
+}
+#tab-plugin a:hover { text-decoration-thickness: 2px; text-decoration-color: var(--ink); }
+#tab-plugin a:hover code { background: var(--chip); }
 
 /* Sample log colouring. Applied by the inline highlighter at the end of index.html.
    Purpose is to let the eye find the field that matters on a projector, not to look like
    an IDE, so the palette is deliberately small: keys recede, values read normally, and
-   only outcomes and the two or three fields a presenter points at are coloured. */
-pre.log .jk   { color: #6a737d; }                        /* JSON keys, deliberately quiet */
-pre.log .jv   { color: #1f2328; }                        /* string values */
-pre.log .jok  { color: #12653b; font-weight: 700; }      /* SUCCESS, INFO, ACCEPTED */
-pre.log .jbad { color: #8c1d18; font-weight: 700; }      /* FAILURE, WARN, invalid_scope */
-pre.log .jhi  {                                          /* the fields worth pointing at */
+   only outcomes and the two or three fields a presenter points at are marked.
+
+   The outcome colours are the STATE TOKENS, not the near misses (#12653b, #8c1d18) an
+   earlier revision used. A log saying FAILURE and a verdict saying refused are the same
+   fact in two places and must be the same red, or the page has two reds and neither is
+   authoritative. */
+pre.log .jk   { color: var(--muted); }                   /* JSON keys, deliberately quiet */
+pre.log .jv   { color: var(--ink); }                     /* string values */
+pre.log .jok  { color: var(--issued); font-weight: 700; } /* SUCCESS, INFO, ACCEPTED */
+pre.log .jbad { color: var(--refused); font-weight: 700; }/* FAILURE, WARN, invalid_scope */
+/* The fields worth pointing at. Marked achromatically, with a wash and a hard underline
+   rather than the highlighter yellow this used to carry: #fff3bf was a decorative near
+   match for in-progress ochre, so a marked field could be read as a running one. Rule 1
+   does not have exceptions for convenience. */
+pre.log .jhi  {
   font-weight: 700;
-  background: #fff3bf;
-  border-radius: 3px;
+  background: #dbdbdb;
+  border-bottom: 2px solid var(--ink);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   padding: 0 2px;
 }
 
 /* Links to the gateway's own console and raw API. Deliberately quieter than the Run
    buttons: opening someone else's admin UI is a supporting action, not the point of the
    page. Outlined rather than solid, which also keeps the two treatments distinct now that
-   both Run buttons are solid. */
+   both Run buttons are solid.
+
+   CURRENTLY UNREFERENCED. index.html moved these three links into table.links above,
+   which shows the address instead of hiding it behind a label, and that was the right
+   call. The rules are kept rather than deleted because the markup is under active edit and
+   a returning .linkbutton with no styling is a worse failure than twenty unused lines.
+   Their colours have been brought onto the achromatic tokens like everything else, so if
+   they do return they return in the current palette. */
 .actions-inline {
   display: flex;
   gap: .6rem;
@@ -1010,20 +1359,20 @@ pre.log .jhi  {                                          /* the fields worth poi
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  font-weight: 600;
+  font-weight: 700;
   font-size: .9rem;
   padding: .45rem .85rem;
-  border: 1px solid var(--rule, #d8dbe0);
-  border-radius: var(--radius-sm, 6px);
-  background: #fff;
-  color: inherit;
+  border: 1px solid var(--plate-edge);
+  border-radius: var(--radius-sm);
+  background: var(--lit);
+  color: var(--ink);
   /* Beats the #tab-plugin a rule, which underlines anchors in this tab. A button that is
      also underlined reads as a mistake. */
   text-decoration: none;
 }
 .linkbutton:hover {
-  background: #f4f6f8;
-  border-color: #b9bfc7;
+  background: var(--hover-wash);
+  border-color: var(--border-strong);
 }
 /* A CSS-drawn external-link cue rather than an icon font, so the page keeps its promise of
    no network dependency. Marked aria-hidden by virtue of being generated content, which
