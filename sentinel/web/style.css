@@ -673,10 +673,20 @@ button.primary:disabled, button.secondary:disabled {
  * colour, which on this page always means state. One step darker than the --well used by
  * block output, because an inline chip has to hold its own against surrounding prose in a
  * way a block does not, and at --well it was nearly invisible on a plate. */
+/* AN IDENTIFIER MAY BREAK ANYWHERE. It has no syllable to protect, which is the same reason
+   table.links breaks its addresses anywhere, and it is also a layout fix in two places:
+   the surrounding prose uses overflow-wrap: break-word, and break-word does NOT reduce the
+   MIN-CONTENT width that auto table layout sizes columns from, only "anywhere" does. So one
+   29 character token, app.oauth2.token.grant.id_jag, was holding the Okta System Log
+   comparison table open to 669px on a 390px screen, and a 32 character one,
+   actor.detailEntry.subjectProfile, was overflowing a list item by 9px. Both took the whole
+   page into horizontal scroll. Blocks are unaffected: pre sets white-space: pre, which
+   disables wrapping entirely, and scrolls itself instead. */
 code {
   font-family: var(--mono); font-size: .85em;
   background: var(--chip); border-radius: var(--radius-xs);
   padding: .08em .3em;
+  overflow-wrap: anywhere;
 }
 /* No well inside blocks that are already recessed, or inside a button label. */
 pre code, .badge code, button code, .profile-chip code { background: none; padding: 0; }
@@ -1166,18 +1176,6 @@ table.facts:has(thead th:nth-child(3)) thead th:first-child { width: 16%; }
    rather than inheriting a muted cell colour. */
 table.facts strong { color: var(--ink); }
 
-/* AN IDENTIFIER IN A CELL MAY BREAK ANYWHERE, and this is a layout fix rather than a
-   typographic preference. The cells above use overflow-wrap: break-word, which is right for
-   prose, but break-word does NOT reduce the MIN-CONTENT width that auto table layout sizes
-   columns from. Only "anywhere" does. So a single 29 character token, app.oauth2.token.grant
-   .id_jag, was holding the Okta System Log comparison table open to 669px on a 390px screen
-   and taking the whole page into horizontal scroll with it.
-   "anywhere" is also simply correct for these values at any width: an identifier, a scope or
-   an event type has no syllable to protect, which is the same reason table.links breaks its
-   addresses anywhere. Prose in the surrounding cell is untouched and still breaks on spaces
-   only. */
-table.facts code { overflow-wrap: anywhere; }
-
 /* PHONE WIDTHS. Three columns of prose have a min-content width that a 390px screen cannot
    pay, and a table cannot be laid out narrower than its min-content, so the excess became
    horizontal scroll on the whole PAGE. Three things give it back, in order of how much:
@@ -1200,6 +1198,16 @@ table.facts code { overflow-wrap: anywhere; }
   table.facts { font-size: 0.9rem; }
   table.facts thead th { white-space: normal; }
   table.facts th, table.facts td { padding: 0.5rem 0.6rem 0.5rem 0; }
+}
+
+/* At 320px the page's own horizontal chrome, 40px of body padding plus 45px of plate
+   padding, is 26 percent of the viewport, and the three column tables cannot fit in what is
+   left. Giving most of that back at the narrowest widths costs nothing anywhere else and
+   helps every element rather than only the tables. 380px rather than 390px so the common
+   handset widths, 390 and 430, keep the roomier padding they already fit in. */
+@media (max-width: 380px) {
+  body { padding-left: 0.7rem; padding-right: 0.7rem; }
+  .panel { padding-left: 0.85rem; padding-right: 0.85rem; }
 }
 
 /* ------------------------------------------------------------------- link tables */
@@ -1600,8 +1608,17 @@ pre.log .jhi  {
 .verdict-desc { font-size: 1.05em; }
 
 /* table.facts carries the explanatory prose across three of the four tabs. It is the main
-   body text of those tabs and was rendering a full 2px under the real body. */
-table.facts { font-size: 1em; }
+   body text of those tabs and was rendering a full 2px under the real body.
+
+   SCOPED TO DESKTOP DELIBERATELY. There is a `table.facts { font-size: 0.9rem }` inside
+   `@media (max-width: 700px)` earlier in this file, which exists to stop three columns of
+   prose exceeding a phone's min-content width and scrolling the whole page sideways. This
+   rule has the same specificity and comes later, so unscoped it would win at EVERY width and
+   silently undo that fix. A legibility floor for a projector must not cost a phone its
+   layout, and the projector case is the only one this rule is for. */
+@media (min-width: 701px) {
+  table.facts { font-size: 1em; }
+}
 
 /* Headings inside the explainer tabs were 16.3px, under the text they head. */
 #tab-about h3, #tab-plugin h3, #tab-logs h3 { font-size: 1.05em; }
