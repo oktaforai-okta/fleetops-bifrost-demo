@@ -176,6 +176,18 @@ Then point Compose at it, in `.env`:
 BIFROST_IMAGE=bifrost:dynamic-local
 ```
 
+> **`.env.example` ships the WRONG default here, and you must change it.** It carries
+> `maximhq/bifrost:latest`, which is one of the published statically-linked images and
+> therefore cannot load any Go plugin at all.
+>
+> **This is the most dangerous misconfiguration in the repo**, because it does not look like a
+> failure. The gateway comes up healthy, tools register, and every tool call **succeeds with no
+> authorization whatsoever.** A demo in that state appears to be working while proving nothing.
+>
+> After `make up`, confirm the plugin is actually deciding rather than merely absent: run the
+> refusal. If `dispatch_vehicle` **succeeds**, the plugin is not loaded. A working system
+> refuses it.
+
 The only difference between that Dockerfile and Bifrost's own is dropping
 `-extldflags '-static'` from the link step. Everything else about the build is theirs. The
 build **fails deliberately** if the result comes out statically linked, because the runtime
