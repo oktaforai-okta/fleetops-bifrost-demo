@@ -634,7 +634,7 @@ make demo          # both outcomes, and it completes rather than erroring out
 ```
 
 ```
-lane read     ISSUED    chain 0oa135... <- wlp135...   scopes task.read agent.invoke
+lane read     ISSUED    chain 0oa<your-service-id> <- wlp<your-agent-id>   scopes task.read agent.invoke
 lane command  REFUSED   invalid_scope [task.dispatch]
 ```
 

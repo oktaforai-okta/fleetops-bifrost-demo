@@ -874,7 +874,7 @@ docker compose logs fleetops | grep ACCEPTED | tail -1
 
 ```
 tools/call list_routes ACCEPTED, scope task.read,
-chain 0oa... (service) <- wlp... (ai_agent), jti AT....
+chain 0oa<your-service-id> (service) <- wlp<your-agent-id> (ai_agent), jti AT.<token-id>
 ```
 
 > **`act` and `sub_profile` are not in Okta's published developer documentation.** They are
