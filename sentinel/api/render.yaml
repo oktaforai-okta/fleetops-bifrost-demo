@@ -1,0 +1,107 @@
+# Render blueprint for the Sentinel chain-of-custody API.
+#
+# Every value below is deliberately unset. sync: false means Render will not take the
+# value from this file, it will prompt for it once and keep it in the service's own
+# environment. Nothing in this repo may carry a tenant id, an authorization server id or
+# a key, and this file is in the repo.
+#
+# ---------------------------------------------------------------------------------------
+# BEFORE THIS WILL BUILD ON RENDER, READ THIS.
+#
+# go.mod carries a `replace` pointing at ../../../okta-bifrost-plugin, a SIBLING clone.
+# That is correct for local work and it is the whole point of the app: it exercises the
+# plugin source you are about to build, not a published version of it. But Render only
+# checks out this repository, so the sibling will not be there and `go build` will fail
+# on the missing replace target.
+#
+# Two ways out, both a decision for whoever owns the deploy rather than something to
+# assume here:
+#
+#   1. Add the plugin as a git submodule INSIDE this repo, then rewrite the replace at
+#      build time so the committed one stays sibling-relative for local use:
+#
+#        buildCommand: |
+#          go mod edit -replace github.com/oktaforai-okta/okta-bifrost-plugin=../../third_party/okta-bifrost-plugin
+#          go build -o sentinel-api .
+#
+#      A submodule cannot live outside the repo root, which is why the path differs from
+#      the local one.
+#
+#   2. Publish or tag the plugin somewhere Render's builder can reach, and drop the
+#      replace entirely in favour of a version.
+#
+# The buildCommand below is the local-truth version: it will work once the module can be
+# resolved and not before. It is left honest rather than made to look deployable.
+# ---------------------------------------------------------------------------------------
+
+services:
+  - type: web
+    name: sentinel-api
+    runtime: go
+    plan: free
+    rootDir: sentinel/api
+    buildCommand: go build -o sentinel-api .
+    startCommand: ./sentinel-api
+    healthCheckPath: /api/healthz
+
+    envVars:
+      # --- Tenant ---------------------------------------------------------------------
+      # Hostname only, no scheme.
+      - key: OKTA_DOMAIN
+        sync: false
+
+      # --- Hop 1: the Sentinel Watch Service ------------------------------------------
+      # A plain API Services client. Agents cannot use client_credentials, so the chain
+      # has to be started by something that is not an agent.
+      - key: OKTA_SERVICE_CLIENT_ID
+        sync: false
+      - key: OKTA_SERVICE_CLIENT_SECRET
+        sync: false
+      # Optional, defaults to agent.invoke.
+      - key: OKTA_SERVICE_CLIENT_SCOPE
+        sync: false
+      # The authorization server protecting the INTAKE AGENT as a resource. Not either
+      # of the other two.
+      - key: OKTA_AGENT_OWN_AS_ID
+        sync: false
+
+      # --- Hop 2 actor: the Sentinel Intake Agent -------------------------------------
+      - key: OKTA_AGENT_ID
+        sync: false
+      # The Intake Agent's own resource URL, e.g. api://sentinel-intake. This is what
+      # hop 1 sends as `resource` and therefore what hop 1's token carries as aud.
+      - key: OKTA_AGENT_RESOURCE_URL
+        sync: false
+      # Path to the agent's private key as a JWK. On Render this needs a secret file;
+      # the plugin reads it from disk once, at startup.
+      - key: OKTA_AGENT_PRIVATE_KEY_FILE
+        sync: false
+
+      # --- Hop 2 target: the Sentinel Tasking Agent -----------------------------------
+      - key: SENTINEL_TASKING_AS_ID
+        sync: false
+      - key: SENTINEL_TASKING_RESOURCE_URL
+        sync: false
+      # Space separated. Okta does not down-scope, so one scope the agent's managed
+      # connection cannot grant fails the whole request.
+      - key: SENTINEL_TASKING_SCOPES
+        sync: false
+
+      # --- Presentation and access ----------------------------------------------------
+      # Display names, optional.
+      - key: SENTINEL_WATCH_NAME
+        sync: false
+      - key: SENTINEL_INTAKE_NAME
+        sync: false
+      - key: SENTINEL_TASKING_NAME
+        sync: false
+
+      # true blanks the tenant host and the wlp/aus/0oa ids out of the endpoints this
+      # API reports. Claims are never masked.
+      - key: SENTINEL_MASK_IDS
+        sync: false
+
+      # The Vercel origin serving the frontend. Defaults to *, which is fine for a demo
+      # and worth narrowing if this stays up.
+      - key: SENTINEL_ALLOWED_ORIGIN
+        sync: false

@@ -21,6 +21,7 @@
         "connection_string": "http://fleetops:8080/mcp",
 
         "auth_type": "none",
+        "needs_session_stickiness": false,
 
         "tools_to_execute": ["get_telemetry", "list_routes"]
       },
@@ -30,6 +31,7 @@
         "connection_type": "http",
         "connection_string": "http://fleetops:8080/mcp",
         "auth_type": "none",
+        "needs_session_stickiness": false,
         "tools_to_execute": ["dispatch_vehicle"]
       }
     ]

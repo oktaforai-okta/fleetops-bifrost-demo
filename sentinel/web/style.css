@@ -1,0 +1,275 @@
+/* Colour is used for one thing only: state. Nothing here is decorative, and every state
+ * is also written out as text, so the page still works if the colours cannot be told
+ * apart. All five state colours clear 4.5:1 against the page background. */
+
+:root {
+  --bg: #ffffff;
+  --panel: #fbfbfb;
+  --border: #dcdcdc;
+  --border-strong: #b9b9b9;
+  --ink: #1b1b1b;
+  --muted: #5a5a5a;
+
+  --idle: #4a4a4a;
+  --idle-fill: #fafafa;
+  --in-progress: #7a4e00;
+  --in-progress-fill: #fdf6e7;
+  --issued: #0a6b3d;
+  --issued-fill: #eef7f2;
+  --refused: #a02017;
+  --refused-fill: #fdeeed;
+  /* A call that never reached a decision. Deliberately not red: nothing may be
+   * attributed to Okta here, because Okta was never asked. */
+  --failed: #3f5a7a;
+  --failed-fill: #eef2f6;
+  --skipped: #5a5a5a;
+  --skipped-fill: #f3f3f3;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1.25rem 4rem;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+main, .masthead, .footer { max-width: 1140px; margin: 0 auto; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------------------- masthead */
+
+.masthead { padding: 2rem 0 1rem; }
+.masthead h1 { margin: 0 0 .5rem; font-size: 1.6rem; letter-spacing: -0.01em; }
+.thesis { margin: 0; max-width: 62ch; color: var(--muted); }
+
+/* ------------------------------------------------------------------------- controls */
+
+.controls {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: 1rem 0 1.5rem;
+}
+
+button.primary {
+  font: inherit; font-weight: 600;
+  padding: .55rem 1.1rem;
+  color: #ffffff; background: #1b1b1b;
+  border: 1px solid #1b1b1b; border-radius: 5px;
+  cursor: pointer;
+}
+button.primary:hover:not(:disabled) { background: #333333; }
+button.primary:disabled { opacity: .55; cursor: default; }
+
+.status { margin: 0; color: var(--muted); }
+.status.busy { color: var(--in-progress); font-weight: 600; }
+.status.good { color: var(--issued); font-weight: 600; }
+.status.bad { color: var(--refused); font-weight: 600; }
+
+/* --------------------------------------------------------------------------- panels */
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+.panel > h2 { margin: 0 0 .35rem; font-size: 1.05rem; }
+.hint { margin: .25rem 0; color: var(--muted); font-size: .875rem; }
+.note { margin: .4rem 0; max-width: 78ch; }
+.warn { color: var(--refused); }
+
+/* -------------------------------------------------------------------------- diagram */
+
+#diagram-wrap { overflow-x: auto; }
+#chain { width: 100%; min-width: 900px; height: auto; display: block; }
+
+.node, .edge { cursor: pointer; }
+.node:focus-visible, .edge:focus-visible { outline: 3px solid #1b1b1b; outline-offset: 2px; }
+
+.node-box { fill: var(--idle-fill); stroke: var(--idle); stroke-width: 1; }
+.node-role { font-size: 10px; letter-spacing: .09em; fill: var(--muted); }
+.node-name { font-size: 15px; font-weight: 650; fill: var(--ink); }
+.node-resource { font-size: 11px; font-family: var(--mono); fill: var(--muted); }
+.node-state { font-size: 12px; font-weight: 650; }
+
+.edge-hit { stroke: transparent; stroke-width: 30; }
+.edge-line { stroke: var(--idle); stroke-width: 2; fill: none; }
+.edge-label { font-size: 12px; font-weight: 650; fill: var(--ink); }
+.edge-state { font-size: 12px; font-weight: 650; }
+
+/* State is carried by colour AND by outline weight and dash pattern, so the diagram is
+ * readable without colour discrimination. */
+.state-idle .node-box, .state-idle .edge-line { stroke: var(--idle); stroke-width: 1; }
+.state-idle .node-box { fill: var(--idle-fill); }
+.state-idle .node-state, .state-idle .edge-state { fill: var(--idle); }
+.arrowhead.state-idle { fill: var(--idle); }
+
+.state-in_progress .node-box, .state-in_progress .edge-line {
+  stroke: var(--in-progress); stroke-width: 2; stroke-dasharray: 6 4;
+}
+.state-in_progress .node-box { fill: var(--in-progress-fill); }
+.state-in_progress .node-state, .state-in_progress .edge-state { fill: var(--in-progress); }
+.arrowhead.state-in_progress { fill: var(--in-progress); }
+
+.state-issued .node-box, .state-issued .edge-line {
+  stroke: var(--issued); stroke-width: 3;
+}
+.state-issued .node-box { fill: var(--issued-fill); }
+.state-issued .node-state, .state-issued .edge-state { fill: var(--issued); }
+.arrowhead.state-issued { fill: var(--issued); }
+
+.state-refused .node-box, .state-refused .edge-line {
+  stroke: var(--refused); stroke-width: 3;
+}
+.state-refused .node-box { fill: var(--refused-fill); }
+.state-refused .node-state, .state-refused .edge-state { fill: var(--refused); }
+.arrowhead.state-refused { fill: var(--refused); }
+
+.state-failed .node-box, .state-failed .edge-line {
+  stroke: var(--failed); stroke-width: 3; stroke-dasharray: 10 3 2 3;
+}
+.state-failed .node-box { fill: var(--failed-fill); }
+.state-failed .node-state, .state-failed .edge-state { fill: var(--failed); }
+.arrowhead.state-failed { fill: var(--failed); }
+
+.state-skipped .node-box, .state-skipped .edge-line {
+  stroke: var(--skipped); stroke-width: 1; stroke-dasharray: 2 4;
+}
+.state-skipped .node-box { fill: var(--skipped-fill); }
+.state-skipped .node-state, .state-skipped .edge-state { fill: var(--skipped); }
+.arrowhead.state-skipped { fill: var(--skipped); }
+
+.node.selected .node-box, .edge.selected .edge-line { stroke-width: 4; }
+
+/* --------------------------------------------------------------------------- legend */
+
+.legend {
+  list-style: none; display: flex; flex-wrap: wrap; gap: 1.1rem;
+  margin: 1rem 0 .25rem; padding: 0;
+  font-size: .875rem; color: var(--muted);
+}
+.legend li { display: flex; align-items: center; gap: .4rem; }
+.swatch {
+  width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+  border: 2px solid var(--idle); background: var(--idle-fill);
+}
+.swatch.in_progress { border-color: var(--in-progress); border-style: dashed; background: var(--in-progress-fill); }
+.swatch.issued { border-color: var(--issued); background: var(--issued-fill); }
+.swatch.refused { border-color: var(--refused); background: var(--refused-fill); }
+.swatch.failed { border-color: var(--failed); border-style: dashed; background: var(--failed-fill); }
+.swatch.skipped { border-color: var(--skipped); border-style: dotted; background: var(--skipped-fill); }
+
+/* ----------------------------------------------------------------------- step list */
+
+.steps { margin: .5rem 0 0; padding-left: 1.5rem; }
+.steps li { margin-bottom: .4rem; }
+
+.step-button {
+  font: inherit; text-align: left; cursor: pointer;
+  background: none; border: none; padding: .15rem 0;
+  display: flex; gap: .6rem; align-items: baseline;
+}
+.step-button:hover .step-label { text-decoration: underline; }
+.step-state {
+  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; min-width: 9.5ch;
+}
+.step.state-idle .step-state { color: var(--idle); }
+.step.state-in_progress .step-state { color: var(--in-progress); }
+.step.state-issued .step-state { color: var(--issued); }
+.step.state-refused .step-state { color: var(--refused); }
+.step.state-failed .step-state { color: var(--failed); }
+.step.state-skipped .step-state { color: var(--skipped); }
+
+/* --------------------------------------------------------------------- detail panel */
+
+#detail h3 { margin: .25rem 0 .5rem; font-size: 1.02rem; }
+#detail h4 { margin: 1rem 0 .35rem; font-size: .95rem; }
+#detail h5 { margin: .9rem 0 .35rem; font-size: .9rem; }
+#detail h6 { margin: .9rem 0 .3rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+.kv { margin: .3rem 0; overflow-wrap: anywhere; }
+code { font-family: var(--mono); font-size: .85em; }
+pre {
+  font-family: var(--mono); font-size: .8rem;
+  background: #f4f4f4; border: 1px solid var(--border);
+  padding: .5rem .6rem; border-radius: 4px; overflow-x: auto; margin: .3rem 0;
+}
+
+button.link {
+  font: inherit; color: #17457a; background: none; border: none;
+  padding: 0; cursor: pointer; text-decoration: underline;
+}
+
+.card {
+  border: 1px solid var(--border-strong); border-left-width: 4px;
+  border-radius: 5px; background: #ffffff;
+  padding: .8rem 1rem; margin: .9rem 0;
+}
+.card.state-idle { border-left-color: var(--idle); }
+.card.state-in_progress { border-left-color: var(--in-progress); }
+.card.state-issued { border-left-color: var(--issued); }
+.card.state-refused { border-left-color: var(--refused); }
+.card.state-failed { border-left-color: var(--failed); }
+.card.state-skipped { border-left-color: var(--skipped); }
+
+.badge {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  border: 1px solid currentColor; border-radius: 3px; padding: .05rem .35rem;
+  vertical-align: .1em;
+}
+.card.state-idle .badge { color: var(--idle); }
+.card.state-in_progress .badge { color: var(--in-progress); }
+.card.state-issued .badge { color: var(--issued); }
+.card.state-refused .badge { color: var(--refused); }
+.card.state-failed .badge { color: var(--failed); }
+.card.state-skipped .badge { color: var(--skipped); }
+
+.error-box {
+  border: 1px solid var(--refused); background: var(--refused-fill);
+  border-radius: 4px; padding: .6rem .8rem; margin: .7rem 0;
+}
+.error-box h5 { margin-top: 0; color: var(--refused); }
+
+/* A call that reached no decision is not tinted like a denial. */
+.error-box.no-decision { border-color: var(--failed); background: var(--failed-fill); }
+.error-box.no-decision h5 { color: var(--failed); }
+
+.token-box { margin-top: .8rem; }
+
+/* The act paragraphs are the honesty of the page, so they are given real weight rather
+ * than being tucked into a footnote. */
+.act-present, .act-absent {
+  border-radius: 4px; padding: .6rem .8rem; margin: .6rem 0; max-width: 82ch;
+}
+.act-present { border: 1px solid var(--issued); background: var(--issued-fill); }
+.act-absent { border: 1px solid var(--in-progress); background: var(--in-progress-fill); }
+.chain { margin: .3rem 0 .6rem; }
+
+table.claims { border-collapse: collapse; width: 100%; margin: .3rem 0 .6rem; }
+table.claims th, table.claims td {
+  text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--border);
+  padding: .3rem .5rem .3rem 0;
+  font-weight: 400;
+}
+table.claims th { width: 12ch; white-space: nowrap; }
+table.claims td { overflow-wrap: anywhere; }
+table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
+
+.preview { margin-top: .7rem; }
+
+/* --------------------------------------------------------------------------- footer */
+
+.footer { padding-top: 1rem; color: var(--muted); font-size: .85rem; }
+.footer p { margin: .3rem 0; }

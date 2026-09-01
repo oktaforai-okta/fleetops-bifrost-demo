@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel chain of custody</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <h1>Sentinel chain of custody</h1>
+  <p class="thesis">
+    Okta is the policy decision point. A gateway is only the enforcement point.
+    There is no gateway in this page: every outcome below came straight from Okta, and
+    every refusal is Okta&rsquo;s own wording.
+  </p>
+</header>
+
+<main>
+
+  <section class="controls" aria-labelledby="controls-h">
+    <h2 id="controls-h" class="sr-only">Run controls</h2>
+    <button id="run" type="button" class="primary">Run the chain</button>
+    <button id="rerun" type="button" class="primary" hidden>Run again</button>
+    <p id="status" class="status" role="status" aria-live="polite">Not run yet.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="diagram-h">
+    <h2 id="diagram-h">The chain</h2>
+    <p class="hint">
+      Three principals, two hops, left to right. Select any box or arrow to see the
+      endpoint that was called and the claims on the token it produced.
+    </p>
+
+    <div id="diagram-wrap">
+      <svg id="chain" viewBox="0 0 1100 260" role="group"
+           aria-label="Chain of custody: Watch Service to Intake Agent to Tasking Agent"></svg>
+    </div>
+
+    <p id="no-d3" class="warn" hidden>
+      The D3 library did not load from the CDN, so the diagram cannot be drawn. The step
+      list below carries the same information as text.
+    </p>
+
+    <ul class="legend" aria-label="What each state looks like">
+      <li><span class="swatch idle"></span>idle, thin outline</li>
+      <li><span class="swatch in_progress"></span>in progress, dashed</li>
+      <li><span class="swatch issued"></span>issued, thick outline</li>
+      <li><span class="swatch refused"></span>refused by Okta, thick outline</li>
+      <li><span class="swatch failed"></span>no decision reached, dash-dot</li>
+      <li><span class="swatch skipped"></span>not attempted, dotted</li>
+    </ul>
+    <p class="hint">
+      <strong>Refused</strong> and <strong>no decision</strong> are kept apart on purpose.
+      Refused means Okta decided, and decided no. No decision means the call never got
+      that far, so nothing about it can be attributed to Okta.
+    </p>
+    <p class="hint">
+      Every box and arrow also carries its state as text, so nothing here depends on
+      being able to tell the colours apart.
+    </p>
+  </section>
+
+  <section class="panel" aria-labelledby="steps-h">
+    <h2 id="steps-h">Steps</h2>
+    <ol id="steps" class="steps"></ol>
+  </section>
+
+  <section class="panel" aria-labelledby="detail-h">
+    <h2 id="detail-h">Detail</h2>
+    <div id="detail" aria-live="polite">
+      <p class="hint">Nothing selected. Choose a box or an arrow above, or a step.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>
+    API base: <code id="api-base">resolving&hellip;</code>.
+    Set it with <code>?api=https://your-api.example.com</code> in the address bar, once:
+    it is remembered per browser, and <code>?api=</code> with nothing after it forgets it.
+    The base is never compiled in.
+  </p>
+  <p>
+    Token values are never returned by the API. What you see is the decoded payload plus
+    a first-12 and last-8 preview.
+  </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

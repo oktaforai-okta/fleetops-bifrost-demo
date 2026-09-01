@@ -13,6 +13,10 @@ bin/
 # Compiled binary, written into the mount by a containerised go build.
 server/server
 driver/driver
+# `go build ./...` names the binary after its directory, so both spellings appear
+# depending on whether it was built by hand or by render.yaml's buildCommand.
+sentinel/api/api
+sentinel/api/sentinel-api
 
 # Local CA bundles for TLS-intercepting networks. Machine-specific, never committed.
 certs/*
