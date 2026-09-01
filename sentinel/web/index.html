@@ -8,18 +8,20 @@
 </head>
 <body>
 
+<!-- PRESENTATION COPY RULE, please keep it.
+     This page is driven live in front of customers on a shared screen. Prose above the
+     diagram pushes the diagram off the fold, and the diagram IS the demonstration: the
+     first question a viewer asks is "where is the gateway in this picture". Explanation
+     that a presenter would say out loud does not need to be on screen, and anything that
+     is genuinely reference material belongs in a collapsed <details> rather than in the
+     flow of the page. Long-form versions of everything cut from here live in
+     sentinel/README.md and docs/HOW-IT-WORKS.md. -->
+
 <header class="masthead">
   <h1>Sentinel chain of custody</h1>
   <p class="thesis">
-    <strong>Okta is the policy decision point. Bifrost is only the enforcement point.</strong>
-    Every outcome below is Okta&rsquo;s decision, and every refusal is Okta&rsquo;s own
-    wording. The gateway holds no policy: it asks, on every call, and obeys the answer.
-  </p>
-  <p class="thesis">
-    Two demonstrations. <em>Through the gateway</em> makes a real MCP tool call, so you see
-    the decision being enforced where it would be in production. <em>Direct to Okta</em>
-    removes the gateway entirely, so you see the delegated token itself, decoded, with
-    nothing in the middle.
+    <strong>Okta decides. Bifrost enforces.</strong> Every refusal below is Okta&rsquo;s own
+    wording; the gateway holds no policy of its own.
   </p>
 </header>
 
@@ -52,10 +54,8 @@
   <section class="panel" aria-labelledby="diagram-h">
     <h2 id="diagram-h">The flow</h2>
     <p class="hint">
-      Left to right, in the order it happens. Each box says what that party IS; each arrow
-      says what happens on that hop. Okta is drawn <strong>beside</strong> the flow rather
-      than in it, because it is asked on every hop rather than being passed through.
-      Select any box or arrow for the endpoint that was called and what came back.
+      Left to right, in order. Okta sits <strong>beside</strong> the flow, not in it,
+      because it is asked on every hop. Select any box or arrow for detail.
     </p>
 
     <div id="diagram-wrap">
@@ -65,34 +65,39 @@
     </div>
 
     <p id="no-d3" class="warn" hidden>
-      The D3 library did not load from the CDN, so the diagram cannot be drawn. The step
-      list below carries the same information as text.
+      The D3 library did not load, so the diagram cannot be drawn. The step list below
+      carries the same information as text.
     </p>
 
-    <ul class="legend" aria-label="What each state looks like">
-      <li><span class="swatch idle"></span>idle, thin outline</li>
-      <li><span class="swatch in_progress"></span>in progress, dashed</li>
-      <li><span class="swatch issued"></span>issued, thick outline</li>
-      <li><span class="swatch refused"></span>refused, thick outline</li>
-      <li><span class="swatch failed"></span>no decision reached, dash-dot</li>
-      <li><span class="swatch skipped"></span>not attempted, dotted</li>
-    </ul>
-    <p class="hint">
-      <strong>Refused</strong> and <strong>no decision</strong> are kept apart on purpose.
-      Refused means Okta decided, and decided no. No decision means the call never got
-      that far, so nothing about it can be attributed to Okta.
-    </p>
-    <p class="hint">
-      Every box and arrow also carries its state as text, so nothing here depends on
-      being able to tell the colours apart.
-    </p>
-    <p class="hint">
-      <strong>sub_profile</strong> appears on a box only once a token has actually stated
-      it. It is the token&rsquo;s own answer to what KIND of principal each party is
-      (<code>service</code> or <code>ai_agent</code>), rather than something inferred from
-      a name. Before the first run the boxes carry no profile, because nothing has said one
-      yet.
-    </p>
+    <details class="reference">
+      <summary>Reading the diagram: states, and what <code>sub_profile</code> means</summary>
+
+      <ul class="legend" aria-label="What each state looks like">
+        <li><span class="swatch idle"></span>idle, thin outline</li>
+        <li><span class="swatch in_progress"></span>in progress, dashed</li>
+        <li><span class="swatch issued"></span>issued, thick outline</li>
+        <li><span class="swatch refused"></span>refused, thick outline</li>
+        <li><span class="swatch failed"></span>no decision reached, dash-dot</li>
+        <li><span class="swatch skipped"></span>not attempted, dotted</li>
+      </ul>
+
+      <p class="hint">
+        <strong>Refused</strong> and <strong>no decision</strong> are kept apart on purpose.
+        Refused means Okta decided, and decided no. No decision means the call never got
+        that far, so nothing about it can be attributed to Okta.
+      </p>
+      <p class="hint">
+        Every box and arrow also carries its state as text, so nothing depends on telling
+        the colours apart.
+      </p>
+      <p class="hint">
+        <strong>sub_profile</strong> appears on a box only once a token has actually stated
+        it. It is the token&rsquo;s own answer to what KIND of principal each party is
+        (<code>service</code> or <code>ai_agent</code>), rather than something inferred from
+        a name. Before the first run the boxes carry no profile, because nothing has said one
+        yet.
+      </p>
+    </details>
   </section>
 
   <section class="panel" aria-labelledby="steps-h">
@@ -111,14 +116,9 @@
 
 <footer class="footer">
   <p>
-    API base: <code id="api-base">resolving&hellip;</code>.
-    Set it with <code>?api=https://your-api.example.com</code> in the address bar, once:
-    it is remembered per browser, and <code>?api=</code> with nothing after it forgets it.
-    The base is never compiled in.
-  </p>
-  <p>
-    Token values are never returned by the API. What you see is the decoded payload plus
-    a first-12 and last-8 preview.
+    API base: <code id="api-base">resolving&hellip;</code>. Set it once with
+    <code>?api=https://your-api.example.com</code>; it is remembered per browser.
+    Token values are never returned: you see the decoded payload plus a preview.
   </p>
 </footer>
 

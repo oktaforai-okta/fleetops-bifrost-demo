@@ -437,3 +437,20 @@ table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
 
 .footer { padding-top: 1rem; color: var(--muted); font-size: .85rem; }
 .footer p { margin: .3rem 0; }
+
+/* Collapsed reference material. This page is presented live, so anything a presenter would
+   say out loud is folded away by default: prose above the diagram pushes the diagram off
+   the fold, and the diagram is the demonstration. */
+details.reference {
+  margin-top: 1rem;
+  border-top: 1px solid var(--rule, #d8dbe0);
+  padding-top: 0.6rem;
+}
+details.reference > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted, #5a6270);
+  padding: 0.2rem 0;
+}
+details.reference > summary:hover { color: var(--fg, #1a1d23); }
+details.reference[open] > summary { margin-bottom: 0.6rem; }
