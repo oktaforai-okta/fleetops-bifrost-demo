@@ -144,10 +144,16 @@ type Validator struct {
 	issuers map[string]bool
 
 	// audiences are the RESOURCE URLs, not the authorization servers' configured
-	// audiences values. Okta stamps aud from the RFC 8707 resource parameter on the
-	// exchange, so two authorization servers can share an audiences setting and still
-	// issue tokens with entirely different aud. Validating against the wrong one of
-	// those two is a confusing failure, hence the emphasis.
+	// audiences values. Tokens issued through this flow are OBSERVED to carry an aud
+	// equal to the RFC 8707 resource value sent on the exchange, so that is what to
+	// validate against. Validating against the authorization server's audiences setting
+	// instead is a confusing failure, hence the emphasis.
+	//
+	// Stated as an observation deliberately. Which of the two actually DETERMINES aud is
+	// not established: where a server's audiences setting happens to hold the same string
+	// as the resource url, both explanations predict the same aud and no test here can
+	// separate them. The validation advice holds either way, because it follows from what
+	// the tokens carry rather than from why they carry it.
 	//
 	// One entry per lane, because each lane addresses its own resource. Sharing one
 	// resource indicator across both lanes would make Okta's resource lookup ambiguous.
@@ -259,7 +265,7 @@ func (v *Validator) Validate(raw string) (*Claims, error) {
 	if !matched {
 		return nil, fmt.Errorf(
 			"wrong audience: token is for %v, this server accepts %s "+
-				"(note aud comes from the resource parameter on the exchange, not the authorization server's audiences setting)",
+				"(this server validates aud against the resource url sent on the exchange, not the authorization server's audiences setting)",
 			[]string(claims.Aud), strings.Join(v.Audiences(), ", "))
 	}
 
