@@ -443,8 +443,12 @@ tool handler error   tool="fleetops_command-dispatch_vehicle"
       The refused call <strong>never reached the protected system.</strong> Not blocked there.
       It never arrived.
     </p>
-<pre class="log">$ docker logs fleetops-bifrost-demo-fleetops-1 | grep -c "tools/call.*dispatch_vehicle"
-0</pre>
+<pre class="log">$ docker logs fleetops-bifrost-demo-fleetops-1 | grep -c "tools/call.*dispatch_vehicle"</pre>
+    <!-- The count is stated here rather than left as a bare 0 on the second line of the code
+         block. As output it was correct and it read as a stray digit, which is a poor fate for
+         the strongest fact on the page. Kept outside the block so nothing fake is put inside
+         it: the block shows the command, this line reports what it returns. -->
+    <p class="answer"><strong>0</strong> calls. Not blocked at the server. It never arrived.</p>
     <p class="hint">
       <strong>One trap:</strong> grepping the bare tool name returns <strong>1</strong>, not
       0, because a startup banner lists the tools served. That line is not a call.

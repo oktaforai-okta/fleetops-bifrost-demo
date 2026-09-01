@@ -461,6 +461,14 @@ button.primary:disabled, button.secondary:disabled {
   overflow-wrap: anywhere; line-height: 1.5;
 }
 
+/* On a narrow screen the plate's inset costs the headline a word per line, and the headline
+   is the whole point of the plate. The rails stay exactly as they are: they are the thing
+   that says which determination this is. */
+@media (max-width: 700px) {
+  .verdict { padding: .9rem 1rem 1.05rem; }
+  .verdict-quote { padding: .7rem .8rem; }
+}
+
 /* --------------------------------------------------------------------------- panels */
 
 /* A mounted instrument face. The plate is lighter than the chassis and its edge is
@@ -604,11 +612,15 @@ button.primary:disabled, button.secondary:disabled {
 }
 .step-button:hover { background: var(--hover-wash); }
 .step-button:hover .step-label { text-decoration: underline; text-underline-offset: 3px; }
-/* The state word, in the plate voice. Fixed width in ch so the labels beside it
-   line up into a column, which is what makes a run readable as a log. */
+/* The state word, in the plate voice. Fixed width so the labels beside it line up into a
+   column, which is what makes a run readable as a log.
+   13ch is measured, not guessed. The longest label app.js can put here is "not attempted",
+   which uppercased at this size and tracking occupies 12.69ch, so the previous 9.5ch let
+   that one row shove its label out of the column while every other row stayed aligned.
+   Do not shrink this without re-measuring against STATES in app.js. */
 .step-state {
   font-size: .8rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .1em; min-width: 10.5ch;
+  letter-spacing: .1em; min-width: 13ch;
 }
 .step.state-idle .step-state { color: var(--idle); }
 .step.state-in_progress .step-state { color: var(--in-progress); }
@@ -628,11 +640,13 @@ button.primary:disabled, button.secondary:disabled {
 }
 
 .kv { margin: .3rem 0; overflow-wrap: anywhere; }
-/* Inline claim values and identifiers. A recessed well separates them from prose without
- * relying on colour, which on this page always means state. */
+/* Inline claim values and identifiers. A chip separates them from prose without relying on
+ * colour, which on this page always means state. One step darker than the --well used by
+ * block output, because an inline chip has to hold its own against surrounding prose in a
+ * way a block does not, and at --well it was nearly invisible on a plate. */
 code {
   font-family: var(--mono); font-size: .85em;
-  background: var(--well); border-radius: var(--radius-xs);
+  background: var(--chip); border-radius: var(--radius-xs);
   padding: .08em .3em;
 }
 /* No well inside blocks that are already recessed, or inside a button label. */
