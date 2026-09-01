@@ -705,24 +705,12 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    size. Appearance is left to pre.log below, which owns every block in these two tabs. */
 #tab-plugin pre, #tab-logs pre { font-size: 0.88rem; }
 
-/* --------------------------------------------------- explainer card width and margin */
+/* ------------------------------------------------ explainer dead space and columns */
 
-/* THE DEAD SPACE THIS FIXES. These panels used to stretch to main's full 1240px while the
-   prose inside them stopped at the measure above, so a card could be a third empty down its
-   right hand side with the text pinned to the left edge. On a projector that reads as
-   unfinished, and it wastes the part of the screen the customer is actually looking at.
-
-   The fix is NOT to let the prose stretch. Long measure is harder to read and 62ch is right.
-   It is to size the CARD to what is in it and centre it, so the leftover becomes symmetric
-   page margin. The same empty pixels then read as a decision rather than as an unfilled box.
-
-   Two widths, because the content is not one kind of thing:
-
-     prose  a panel holding paragraphs, a list and links, and nothing else. The card is the
-            measure plus its own padding, so there is no gap left inside it at all.
-     wide   a panel holding a table.facts or a pre.log. A three column comparison table and a
-            block of verbatim JSON both need more room than any line of prose should ever
-            have, so these keep a card sized for them instead.
+/* THE DEAD SPACE THIS FIXES. These panels stretch to main's full 1240px, and the prose inside
+   them stops at the measure above, so a card could be left a third empty down its right hand
+   side with the text pinned to the left edge. On a projector that reads as unfinished, and it
+   wastes the part of the screen the customer is actually looking at.
 
    The demo tab appears in none of these selectors. Its flow diagram is the demonstration and
    is the one thing on this page that has earned all 1240px. */
@@ -749,11 +737,21 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
 
    :has() is progressive enhancement here and fails safe: where it is unsupported the rule is
    dropped and these panels are simply single column at the wider measure, which is still a
-   large improvement on the original. */
+   large improvement on the original.
+
+   The exclusion list matches ANY table and ANY pre, rather than naming table.facts and
+   pre.log. It has to. A column box fragments its content, so a table caught in one gets its
+   rows dealt across the gap with the header left behind above the first column, which is not
+   a layout, it is a bug. That is exactly what happened when table.links was introduced in the
+   plugin tab while the list still named only table.facts: the three link rows in "See it in
+   Bifrost itself" split two and one across the column gap. Matching the element rather than
+   the class means new markup cannot reintroduce it, and a panel that gains a table simply
+   stays single column, which is the safe direction and is also what a table of full URLs
+   wants, since a github URL only stays on one line at full card width. */
 @media (min-width: 1100px) {
-  #tab-about .panel:not(:has(table.facts, pre.log, .actions-inline)),
-  #tab-plugin .panel:not(:has(table.facts, pre.log, .actions-inline)),
-  #tab-logs .panel:not(:has(table.facts, pre.log, .actions-inline)) {
+  #tab-about .panel:not(:has(table, pre, .actions-inline)),
+  #tab-plugin .panel:not(:has(table, pre, .actions-inline)),
+  #tab-logs .panel:not(:has(table, pre, .actions-inline)) {
     columns: 2;
     column-gap: 2.4rem;
   }

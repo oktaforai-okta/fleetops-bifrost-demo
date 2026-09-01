@@ -145,7 +145,7 @@
 <div id="tab-plugin" role="tabpanel" aria-labelledby="tab-btn-plugin" hidden>
 
   <section class="panel">
-    <h2>What the plugin is</h2>
+    <h2>What is the plugin?</h2>
     <p>
       A small piece of code that loads <strong>inside Bifrost</strong>. Bifrost is not
       modified and not forked. The plugin is what makes the gateway ask Okta.
@@ -153,15 +153,25 @@
     <p class="hint">
       Open source, and reusable by any Bifrost customer.
     </p>
-    <!-- Buttons rather than inline code links. At the reading width these panels now use, a
-         full repo path wrapped mid-token as "oktaforai-okta/okta-bifrost-" then "plugin",
-         which reads as a rendering fault rather than as a link. A short label cannot break. -->
-    <p class="actions-inline">
-      <a class="linkbutton" href="https://github.com/oktaforai-okta/okta-bifrost-plugin"
-         target="_blank" rel="noopener noreferrer">The plugin, on GitHub</a>
-      <a class="linkbutton" href="https://github.com/oktaforai-okta/fleetops-bifrost-demo"
-         target="_blank" rel="noopener noreferrer">This demo, including the Okta runbook</a>
-    </p>
+    <!-- Full URLs as plain links, NOT buttons. A button label hides the address, and the
+         thing a viewer most often wants from a repo reference is to copy it. At the 88ch
+         measure these panels use, a github URL fits on one line and does not wrap. -->
+    <table class="links">
+      <tbody>
+        <tr>
+          <td>The plugin</td>
+          <td><a href="https://github.com/oktaforai-okta/okta-bifrost-plugin"
+                 target="_blank" rel="noopener noreferrer"
+              >https://github.com/oktaforai-okta/okta-bifrost-plugin</a></td>
+        </tr>
+        <tr>
+          <td>This demo, including the Okta runbook</td>
+          <td><a href="https://github.com/oktaforai-okta/fleetops-bifrost-demo"
+                 target="_blank" rel="noopener noreferrer"
+              >https://github.com/oktaforai-okta/fleetops-bifrost-demo</a></td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- Deliberately short. This is a jumping-off point, not a chapter: three ways to look at
@@ -174,28 +184,24 @@
       Three ways to look at the gateway directly. None of them is this page.
     </p>
 
-    <table class="facts">
+    <table class="links">
       <tbody>
         <tr>
-          <td>
-            <a class="linkbutton" id="bifrost-ui-link"
-               href="http://localhost:8080/ui" target="_blank" rel="noopener noreferrer">Bifrost
-              console</a>
-          </td>
-          <td>The gateway&rsquo;s own admin UI.</td>
+          <td>The gateway&rsquo;s own admin UI</td>
+          <td><a id="bifrost-ui-link" href="http://localhost:8080/ui"
+                 target="_blank" rel="noopener noreferrer"
+              >http://localhost:8080/ui</a></td>
         </tr>
         <tr>
-          <td>
-            <a class="linkbutton" id="bifrost-api-link"
-               href="http://localhost:8080/api/mcp/clients" target="_blank"
-               rel="noopener noreferrer">Registered clients</a>
-          </td>
-          <td>Raw JSON: both MCP clients and the tools each serves.</td>
+          <td>Registered clients and their tools, raw JSON</td>
+          <td><a id="bifrost-api-link" href="http://localhost:8080/api/mcp/clients"
+                 target="_blank" rel="noopener noreferrer"
+              >http://localhost:8080/api/mcp/clients</a></td>
         </tr>
         <tr>
-          <td><code>./scripts/watch-gateway.sh</code></td>
           <td><strong>The decisions.</strong> One line per tool call, and a refusal in the
-              plugin&rsquo;s own words. This is the one to have open while you demo.</td>
+              plugin&rsquo;s own words. Have this open while you demo</td>
+          <td><code>./scripts/watch-gateway.sh</code></td>
         </tr>
       </tbody>
     </table>
