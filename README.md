@@ -184,10 +184,18 @@ a linker flag.
 
 Two things that Dockerfile also does, and why:
 
-- **Stubs `bifrost-http/ui` with a placeholder file.** The admin console is pulled in with
-  `//go:embed all:ui`, so the directory must be non-empty or the build fails. A placeholder
-  satisfies the embed and keeps an entire npm and React stage out of the build. Build the UI
-  as their Dockerfile does if you want the console.
+- **Builds Bifrost's real admin console.** A `ui-builder` stage on the same Node image their
+  own Dockerfile uses runs `npm ci` and their build script, sharing one clone with the Go
+  stage so the console and the server can never come from different commits. An earlier
+  version of this file stubbed the directory with a placeholder instead, to keep Node out of
+  the build; that is no longer what happens, and **you do get the console.** It is at
+  `http://localhost:8080/workspace/dashboard`, with `/workspace/plugins` showing the gateway's
+  own view of this plugin. Note the console has **no login**.
+
+  The build asserts the console is genuinely built rather than trusting the copy, because
+  `//go:embed all:ui` is satisfied by ANY non-empty directory: a failed UI build would
+  otherwise yield a server that boots and serves a blank page. The check looks for the hashed
+  asset reference a real build emits.
 - **Optionally appends `certs/ca-bundle.crt` to the build trust store,** for networks that
   intercept TLS. Without it the `git clone` inside the build fails with an
   unknown-authority error.
@@ -274,10 +282,10 @@ gitignored, and the rendered `config.json` is gitignored too. The agent's privat
 passes through either.
 
 If `make config` reports `missing secrets/sentinel-intake-key.jwk`, save the agent key under
-**both** filenames the repo currently expects. The gateway path wants
-`secrets/sentinel-intake-key.jwk`, the `make demo-*` driver targets want
-`secrets/agent-key.jwk`. That disagreement is a pending cleanup, covered in
-[docs/RUNBOOK.md](docs/RUNBOOK.md) step 3.
+that name. **There is one canonical filename**, and the gateway path, the `make demo-*` driver
+targets and `scripts/render-config.sh` all now agree on it via the Makefile's
+`AGENT_KEY_FILE`. Earlier revisions asked for it under two names; that is no longer needed,
+and if you followed those instructions the second copy is harmless and unused.
 
 ### Configuration traps
 
@@ -498,16 +506,31 @@ provided parser:
 . ./scripts/load-env.sh
 ```
 
-**The CA override is `EXTRA_CA_BUNDLE`, not `SSL_CERT_FILE`.** Compose gives the host shell
-precedence over `.env`, and `SSL_CERT_FILE` is commonly already exported on a developer
-machine. Naming the variable `SSL_CERT_FILE` in `.env` would let a stale host value silently
+**For the Compose stack, set `EXTRA_CA_BUNDLE` rather than `SSL_CERT_FILE`.** Compose gives
+the host shell precedence over `.env`, and `SSL_CERT_FILE` is commonly already exported on a
+developer machine. Naming it `SSL_CERT_FILE` in `.env` would let a stale host value silently
 win and point the container at a path that does not exist inside it. The symptom is an
 unknown-authority TLS error identical to having configured nothing at all. Only needed on
 networks that re-sign TLS. See `certs/`.
 
+**What actually consumes it, since this is easy to get wrong.** `EXTRA_CA_BUNDLE` is not
+special to anything: `docker-compose.yml` reads it and passes `SSL_CERT_FILE` into the
+container, and **nothing outside Compose does that translation.** So a container you start by
+hand, such as the Sentinel API in `sentinel/README.md`, must be given `SSL_CERT_FILE`
+directly, pointing at a path that exists **inside that container**. In the running Sentinel
+API, `EXTRA_CA_BUNDLE` is present and names `/certs/...`, which is not mounted there, while
+`SSL_CERT_FILE` names the path under the `/w` mount and is the one doing the work. In the
+Bifrost container the reverse holds and `/certs` is mounted. Do not chase `EXTRA_CA_BUNDLE`
+when debugging a hand-started container; check `SSL_CERT_FILE` and check the path resolves
+inside that container.
+
 ---
 
 ## Reading a failure
+
+The common cases are below. **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) is the
+fuller version**, organised by symptom, and it is the one to open when something is actually
+broken. This table is a subset of it.
 
 | Symptom | Cause |
 |---|---|

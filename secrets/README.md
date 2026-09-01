@@ -1,6 +1,9 @@
 # Agent key
 
-Put the agent's **private** key JWK here as `agent-key.jwk`, one JSON object.
+Put the agent's **private** key JWK here as `sentinel-intake-key.jwk`, one JSON object.
+This is the one canonical name. It is what `bifrost/config.template.json`,
+`scripts/render-config.sh` and the Makefile's `AGENT_KEY_FILE` all expect. An older name,
+`agent-key.jwk`, appears in some places and is no longer required.
 
 Okta shows the private key exactly once, when the key pair is generated on the agent. If
 you missed it, generate a new key pair rather than trying to recover the old one.

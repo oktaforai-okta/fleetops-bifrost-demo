@@ -117,13 +117,25 @@ Two processes. Nothing is deployed and nothing is committed.
 ```sh
 # 1. The API. Needs the sibling plugin clone at ../../okta-bifrost-plugin.
 cd sentinel/api
-set -a; . ../../.env; . ../.env; set +a
+# Parse rather than source. One value in .env contains a space, so `. ./.env` runs
+# part of it as a command and the variable never gets set. load-env.sh exists for
+# exactly this, and it exports for you, so no `set -a` wrapper.
+. ../../scripts/load-env.sh ../../.env
+
+# Only if you keep a separate sentinel/.env. The repo root .env already carries the
+# SENTINEL_* values, so this is usually unnecessary and will say so if the file is absent.
+[ -f ../.env ] && . ../../scripts/load-env.sh ../.env
+
 go run .                       # http://localhost:8090
 
-# 2. The frontend, any static server.
+# 2. The frontend, any static server. Use 8800, NOT 8000: port 8000 is commonly
+#    taken by an unrelated service that answers a cheerful HTTP 200, which makes
+#    it look like your server started when it did not.
 cd sentinel/web
-python3 -m http.server 8000    # http://localhost:8000
+python3 -m http.server 8800    # http://localhost:8800
 ```
+
+Then open `http://localhost:8800/?api=http://localhost:8090`.
 
 On `localhost` the frontend defaults to `http://localhost:8090`, so the two find each
 other with no configuration. Elsewhere, set the base once with

@@ -1014,16 +1014,37 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    panel is about 579px, so the old 996px cap could never apply and the measure was inert
    at the resolution this is actually demonstrated at. 522px binds inside a column.
 
-   ON THE DEAD SPACE THIS LEAVES. Less than it looks: of the ten explainer panels, exactly
-   ONE holds nothing but prose ("Why ask twice"), and that one gets two columns above
-   1100px. Every other panel contains a table or a log block, and those are excluded from
-   the measure and fill the card themselves, so the only slack is beside a short intro
-   paragraph above a full-width table. Cards stay full width to 1240px in all four tabs. */
+   ON THE DEAD SPACE THIS LEAVES, STATED ACCURATELY. Every paragraph in these three tabs
+   now stops at 543px inside a 1195px card, not just the intro lines. That is the cost and
+   it is worth paying, because the width is anchored by other means in every panel:
+
+     - Of the ten explainer panels, exactly ONE holds nothing but prose ("Why ask twice"),
+       and that one goes to two columns above 1100px. Each column is about 579px, so the
+       cap binds there too and gives 69 characters per column.
+     - Every other panel contains a table or a log block. Those are excluded from the
+       measure, fill the card themselves, and anchor the right edge of the panel, so a
+       narrow text column above a full-width table reads as an ordinary technical document
+       rather than as a box that failed to load.
+
+   What is NOT done here is widening the line to reach the edge. That was the old 88ch, and
+   127 character lines are not a solution to anything. Cards stay full width to 1240px in
+   all four tabs, which is the constraint; the LINES do not have to. */
 #tab-about, #tab-plugin, #tab-logs { --measure: 48ch; }
 
-#tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: var(--measure); }
+/* text-wrap: pretty is not a flourish, it is the other half of the measure change. A cap
+   that produces a good 66 characters for a running paragraph produces a BAD break for a
+   twelve word one: "Three ways to look at the gateway directly. None of them is this" then
+   "page." alone on the second line. pretty removes the orphan by rebalancing the last few
+   lines, so the cap can stay at a readable length without punishing short ledes. It is
+   progressive enhancement and fails safe: where it is unsupported the rag is merely back to
+   what it was, never broken. */
+#tab-about p, #tab-plugin p, #tab-logs p {
+  margin: 0.35rem 0;
+  max-width: var(--measure);
+  text-wrap: pretty;
+}
 #tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: var(--measure); }
-#tab-about li, #tab-plugin li, #tab-logs li { margin: 0.25rem 0; }
+#tab-about li, #tab-plugin li, #tab-logs li { margin: 0.25rem 0; text-wrap: pretty; }
 
 /* Neither of these tabs sits above the fold, so their monospace output can afford the extra
    size. Appearance is left to pre.log below, which owns every block in these two tabs. */
@@ -1144,6 +1165,42 @@ table.facts:has(thead th:nth-child(3)) thead th:first-child { width: 16%; }
 /* Emphasis inside a cell is the author's, and it is load bearing here, so it gets full ink
    rather than inheriting a muted cell colour. */
 table.facts strong { color: var(--ink); }
+
+/* AN IDENTIFIER IN A CELL MAY BREAK ANYWHERE, and this is a layout fix rather than a
+   typographic preference. The cells above use overflow-wrap: break-word, which is right for
+   prose, but break-word does NOT reduce the MIN-CONTENT width that auto table layout sizes
+   columns from. Only "anywhere" does. So a single 29 character token, app.oauth2.token.grant
+   .id_jag, was holding the Okta System Log comparison table open to 669px on a 390px screen
+   and taking the whole page into horizontal scroll with it.
+   "anywhere" is also simply correct for these values at any width: an identifier, a scope or
+   an event type has no syllable to protect, which is the same reason table.links breaks its
+   addresses anywhere. Prose in the surrounding cell is untouched and still breaks on spaces
+   only. */
+table.facts code { overflow-wrap: anywhere; }
+
+/* PHONE WIDTHS. Three columns of prose have a min-content width that a 390px screen cannot
+   pay, and a table cannot be laid out narrower than its min-content, so the excess became
+   horizontal scroll on the whole PAGE. Three things give it back, in order of how much:
+
+   1. The header row may wrap. nowrap above is right on a wide card, where a two or three
+      word column label reads better on one line, and it is wrong here: "With one shared
+      account" plus "With chain of custody" is 456px of unbreakable header in 350px of room.
+   2. Smaller type, which scales min-content down with it. This is the one place the 18px
+      floor is relaxed, and only here: that floor exists because this page is projected and
+      read from the back of a room, and nobody projects from a phone. 14.4px in a
+      comparison table on a handset is comfortable.
+   3. Tighter column gutters.
+
+   NOT SOLVED with display: block plus overflow-x on the table, which is the usual trick and
+   would have been fewer lines. Changing a table's display removes its rows and columns from
+   the accessibility tree in several browser and screen reader combinations, and the markup
+   is not mine to add a role or a wrapper to. Keeping the table a table matters more than
+   saving three declarations. */
+@media (max-width: 700px) {
+  table.facts { font-size: 0.9rem; }
+  table.facts thead th { white-space: normal; }
+  table.facts th, table.facts td { padding: 0.5rem 0.6rem 0.5rem 0; }
+}
 
 /* ------------------------------------------------------------------- link tables */
 
