@@ -20,6 +20,16 @@ services:
       FLEETOPS_ISSUERS: ${FLEETOPS_ISSUERS:?set FLEETOPS_ISSUERS in .env}
       FLEETOPS_AUDIENCES: ${FLEETOPS_AUDIENCES:?set FLEETOPS_AUDIENCES in .env}
       FLEETOPS_ADDR: ":8080"
+      # The scope each tool demands. These must be scopes the tenant actually publishes
+      # and the agent's managed connection actually grants, otherwise this server refuses
+      # a token the gateway legitimately minted and the failure looks like a gateway bug.
+      #
+      # The defaults below are the demo tenant's names: task.read is granted to the agent
+      # and task.dispatch deliberately is not, which is what makes dispatch_vehicle the
+      # refusal worth showing.
+      FLEETOPS_SCOPE_TELEMETRY_READ: ${FLEETOPS_SCOPE_TELEMETRY_READ:-task.read}
+      FLEETOPS_SCOPE_ROUTES_READ: ${FLEETOPS_SCOPE_ROUTES_READ:-task.read}
+      FLEETOPS_SCOPE_DISPATCH: ${FLEETOPS_SCOPE_DISPATCH:-task.dispatch}
       # Only used on networks that intercept TLS. Empty means the image's own trust
       # store, which is what you want everywhere else. See certs/README.md.
       #

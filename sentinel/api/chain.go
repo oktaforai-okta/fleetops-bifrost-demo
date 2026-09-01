@@ -66,11 +66,21 @@ type stepEvent struct {
 	Endpoint string `json:"endpoint,omitempty"`
 	Grant    string `json:"grant,omitempty"`
 
+	// Scopes is what this step asked for. Reported so a refusal is shown next to the
+	// request that earned it, rather than leaving the reader to infer what was asked.
+	Scopes []string `json:"scopes,omitempty"`
+
+	// Tool is the MCP tool called, on the gateway path only.
+	Tool string `json:"tool,omitempty"`
+
 	State  string `json:"state"`
 	Detail string `json:"detail,omitempty"`
 
 	Error *oktaFailure `json:"error,omitempty"`
 	Token *tokenView   `json:"token,omitempty"`
+
+	// Result is what an upstream resource server said, verbatim. Gateway path only.
+	Result *resourceResult `json:"result,omitempty"`
 }
 
 // oktaFailure carries a refusal. Okta's own wording is preserved without rewording:
@@ -83,15 +93,30 @@ type oktaFailure struct {
 
 	// FromOkta distinguishes Okta's words from ours. A DNS failure is not a refusal, and
 	// the UI must not present one as though it were.
+	//
+	// True only for source okta: an error body this app received from Okta directly. A
+	// refusal relayed through the gateway quotes Okta but was not read from Okta by this
+	// app, so it is source gateway and this stays false. The distinction is small and it
+	// is the honest one.
 	FromOkta bool `json:"from_okta"`
+
+	// Source is where the wording came from: okta, gateway or sentinel.
+	Source string `json:"source"`
 }
+
+// Where a piece of error wording originated.
+const (
+	sourceOkta     = "okta"     // an error body this app received from Okta
+	sourceGateway  = "gateway"  // Bifrost's wording, which may quote Okta
+	sourceSentinel = "sentinel" // this application's own wording
+)
 
 // emitFunc publishes one event. Implemented by the SSE writer.
 type emitFunc func(stepEvent)
 
 // runChain executes the whole chain, emitting as it goes. It returns nothing: every
 // outcome, including a refusal, has already been reported through emit.
-func runChain(cfg *config, emit emitFunc) {
+func runChain(cfg *config, mode runMode, emit emitFunc) {
 	hop1 := func(state string) stepEvent {
 		return stepEvent{
 			Step:     stepWatchToken,
@@ -100,6 +125,7 @@ func runChain(cfg *config, emit emitFunc) {
 			Actor:    "watch",
 			Target:   "intake",
 			Grant:    "client_credentials",
+			Scopes:   strings.Fields(cfg.serviceClientScope),
 			Endpoint: maskEndpoint(serviceTokenEndpoint(cfg), cfg.oktaDomain, cfg.maskIDs),
 			State:    state,
 		}
@@ -129,7 +155,7 @@ func runChain(cfg *config, emit emitFunc) {
 	}
 
 	ev = hop1(stateIssued)
-	ev.Token = describe(kindAccessToken, subjectToken)
+	ev.Token = describe(kindAccessToken, subjectToken, cfg.namer())
 	ev.Detail = "Check aud below: it should be the Intake Agent's resource URL."
 	emit(ev)
 
@@ -138,7 +164,7 @@ func runChain(cfg *config, emit emitFunc) {
 	// reimplemented. That is the point of this app: a run that reaches ISSUED is direct
 	// evidence the plugin's exchange works, and a refusal is one we would otherwise only
 	// have found through a gateway with far less visibility.
-	binding := cfg.binding()
+	binding := cfg.bindingFor(mode)
 
 	idJAGEvent := func(state string) stepEvent {
 		return stepEvent{
@@ -148,6 +174,7 @@ func runChain(cfg *config, emit emitFunc) {
 			Actor:    "intake",
 			Target:   "tasking",
 			Grant:    "urn:ietf:params:oauth:grant-type:token-exchange",
+			Scopes:   binding.Scopes,
 			Endpoint: maskEndpoint(orgTokenEndpoint(cfg), cfg.oktaDomain, cfg.maskIDs),
 			State:    state,
 		}
@@ -160,6 +187,7 @@ func runChain(cfg *config, emit emitFunc) {
 			Actor:    "intake",
 			Target:   "tasking",
 			Grant:    "urn:ietf:params:oauth:grant-type:jwt-bearer",
+			Scopes:   binding.Scopes,
 			Endpoint: maskEndpoint(casTokenEndpoint(cfg), cfg.oktaDomain, cfg.maskIDs),
 			State:    state,
 		}
@@ -170,6 +198,12 @@ func runChain(cfg *config, emit emitFunc) {
 		"only place an ID-JAG can be obtained; exchanging at a custom authorization " +
 		"server instead is what makes a gateway look like it supports delegation when it " +
 		"only supports one hop."
+	if mode == modeDeny {
+		ev.Detail = "This run asks for " + strings.Join(binding.Scopes, " ") + ", which the " +
+			"agent's managed connection is not expected to grant. Everything else about " +
+			"the request is identical to the granted run, so whatever comes back is " +
+			"attributable to the scopes asked for and to nothing else."
+	}
 	emit(ev)
 	emit(accessEvent(stateInProgress))
 
@@ -200,7 +234,7 @@ func runChain(cfg *config, emit emitFunc) {
 			// observed rather than inferred.
 			ev = idJAGEvent(stateIssued)
 			if result != nil && result.IDJAG != "" {
-				ev.Token = describe(kindAssertion, result.IDJAG)
+				ev.Token = describe(kindAssertion, result.IDJAG, cfg.namer())
 				ev.Detail = "The exchange succeeded and its assertion is decoded below. " +
 					"Redemption of that assertion is what then failed, which is the next " +
 					"step. This is the distinction worth having: Okta DID assert this " +
@@ -231,7 +265,7 @@ func runChain(cfg *config, emit emitFunc) {
 	}
 
 	ev = idJAGEvent(stateIssued)
-	ev.Token = describe(kindAssertion, result.IDJAG)
+	ev.Token = describe(kindAssertion, result.IDJAG, cfg.namer())
 	ev.Detail = "The assertion itself, decoded. This is where the delegation is asserted, " +
 		"so if an act claim appears anywhere in this chain it is most likely to be here. " +
 		"Being an assertion rather than an access token, its claim set need not match the " +
@@ -239,7 +273,7 @@ func runChain(cfg *config, emit emitFunc) {
 	emit(ev)
 
 	ev = accessEvent(stateIssued)
-	ev.Token = describe(kindAccessToken, result.AccessToken)
+	ev.Token = describe(kindAccessToken, result.AccessToken, cfg.namer())
 	ev.Token.ExpiresIn = time.Until(result.ExpiresAt).Round(time.Second).String()
 	ev.Detail = "This is the token that would go upstream, and the only one of the two " +
 		"that leaves the gateway. Everything below is decoded from it; nothing is added."
@@ -367,11 +401,13 @@ func failure(err error, cfg *config) *oktaFailure {
 			Description: oe.Description,
 			HTTPStatus:  oe.StatusCode,
 			FromOkta:    true,
+			Source:      sourceOkta,
 		}
 	}
 	return &oktaFailure{
 		Description: maskEndpoint(err.Error(), cfg.oktaDomain, cfg.maskIDs),
 		FromOkta:    false,
+		Source:      sourceSentinel,
 	}
 }
 

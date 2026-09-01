@@ -24,18 +24,21 @@ if [ ! -f .env ]; then
 	exit 1
 fi
 
-if [ ! -f secrets/agent-key.jwk ]; then
-	echo "missing secrets/agent-key.jwk" >&2
+# Must match private_key_jwk_file in the template. Checking a different file than the
+# one the config names is worse than not checking at all: it passes, and the plugin then
+# fails at Init on a path this script just told you was fine.
+if [ ! -f secrets/sentinel-intake-key.jwk ]; then
+	echo "missing secrets/sentinel-intake-key.jwk" >&2
 	echo "  Save the agent's PRIVATE key JWK there. Okta shows it exactly once, when the" >&2
 	echo "  key pair is generated; if you missed it, generate a new key pair." >&2
 	exit 1
 fi
 
-# Load .env. `set -a` exports everything defined, which is what envsubst needs.
-set -a
+# Load .env by parsing it, not by sourcing it. Sourcing breaks on any unquoted value
+# containing a space, which docker's own --env-file accepts happily, so the file can be
+# known-good everywhere else and still fail only here. See scripts/load-env.sh.
 # shellcheck disable=SC1091
-. ./.env
-set +a
+. "$(dirname "$0")/load-env.sh"
 
 # The private key is deliberately absent from this list. It is read by the plugin from
 # /secrets/agent-key.jwk, so it never passes through this script, never lands in

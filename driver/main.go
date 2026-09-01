@@ -224,9 +224,18 @@ func describeToken(raw string) {
 		// delegation chain, and the whole argument rests on it being present.
 		fmt.Printf("  acting agent     : ABSENT. No act claim, so this token names no acting agent.\n")
 	} else {
+		// Okta terminates the nested act claim by restating the subject as the innermost
+		// actor's own delegator, so the raw walk yields one more entry than there are
+		// principals: "service <- agent <- service" for a two-party delegation. The
+		// trailing entry is dropped, and only when it is identical to the subject, so a
+		// chain that genuinely revisits a principal mid-way is still shown as-is.
+		// Kept in step with Claims.Chain in server/auth.go.
 		chain := []string{c.Sub}
 		for a := c.Act; a != nil; a = a.Act {
 			chain = append(chain, a.Sub)
+		}
+		if n := len(chain); n > 1 && chain[n-1] == c.Sub {
+			chain = chain[:n-1]
 		}
 		fmt.Printf("  delegation chain : %s\n", strings.Join(chain, "  <-  "))
 	}

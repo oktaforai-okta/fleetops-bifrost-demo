@@ -19,23 +19,40 @@
 
 <main>
 
+  <section class="paths-section" aria-labelledby="paths-h">
+    <h2 id="paths-h" class="sr-only">Which demonstration to run</h2>
+    <!-- Filled from /api/config. The gateway path is selected when it is actually live;
+         an unavailable path stays visible but disabled, with the reason, because "the
+         gateway registered no tools" is information rather than something to hide. -->
+    <div id="paths" class="paths" role="group" aria-label="Which demonstration to run" hidden></div>
+  </section>
+
   <section class="controls" aria-labelledby="controls-h">
     <h2 id="controls-h" class="sr-only">Run controls</h2>
     <button id="run" type="button" class="primary">Run the chain</button>
     <button id="rerun" type="button" class="primary" hidden>Run again</button>
+    <!-- Labelled from /api/config at load, so it names the scope it will actually ask
+         for. Hidden entirely when the API offers no refusal run. -->
+    <button id="run-deny" type="button" class="secondary" hidden>Try a scope it does not have</button>
     <p id="status" class="status" role="status" aria-live="polite">Not run yet.</p>
   </section>
+
+  <!-- The one-line answer, large. Filled in when a run finishes; a refusal quotes Okta
+       verbatim here rather than only inside a panel further down. -->
+  <div id="verdict" aria-live="polite"></div>
 
   <section class="panel" aria-labelledby="diagram-h">
     <h2 id="diagram-h">The chain</h2>
     <p class="hint">
-      Three principals, two hops, left to right. Select any box or arrow to see the
+      Three principals, two hops, left to right. Each box says what that principal IS;
+      each arrow says what happens on that hop. Select any box or arrow to see the
       endpoint that was called and the claims on the token it produced.
     </p>
 
     <div id="diagram-wrap">
-      <svg id="chain" viewBox="0 0 1100 260" role="group"
-           aria-label="Chain of custody: Watch Service to Intake Agent to Tasking Agent"></svg>
+      <svg id="chain" viewBox="0 0 1240 400" role="group"
+           aria-label="The flow being demonstrated, left to right, with Okta beside it as
+                       the decision point"></svg>
     </div>
 
     <p id="no-d3" class="warn" hidden>
@@ -59,6 +76,13 @@
     <p class="hint">
       Every box and arrow also carries its state as text, so nothing here depends on
       being able to tell the colours apart.
+    </p>
+    <p class="hint">
+      <strong>sub_profile</strong> appears on a box only once a token has actually stated
+      it. It is the token&rsquo;s own answer to what KIND of principal each party is
+      (<code>service</code> or <code>ai_agent</code>), rather than something inferred from
+      a name. Before the first run the boxes carry no profile, because nothing has said one
+      yet.
     </p>
   </section>
 

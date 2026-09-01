@@ -21,6 +21,7 @@
         "connection_string": "http://fleetops:8080/mcp",
 
         "auth_type": "none",
+
         "needs_session_stickiness": false,
 
         "tools_to_execute": ["get_telemetry", "list_routes"]
@@ -47,21 +48,23 @@
         "okta_domain": "${OKTA_DOMAIN}",
         "agent_id": "${OKTA_AGENT_ID}",
         "agent_resource_url": "${OKTA_AGENT_RESOURCE_URL}",
-        "private_key_jwk_file": "/secrets/agent-key.jwk",
+        "private_key_jwk_file": "/secrets/sentinel-intake-key.jwk",
         "agent_status_ttl": "10s",
         "fail_open": false,
+
+        "allow_connect_without_caller": true,
         "bindings": {
           "fleetops_read": {
-            "authorization_server_id": "${OKTA_READ_LANE_AS_ID}",
-            "target_resource_url": "${FLEETOPS_READ_RESOURCE_URL}",
-            "scopes": ["fleet.telemetry.read", "fleet.routes.read"],
-            "tools": ["get_telemetry", "list_routes"]
+            "authorization_server_id": "${OKTA_COMMAND_LANE_AS_ID}",
+            "target_resource_url": "${FLEETOPS_COMMAND_RESOURCE_URL}",
+            "scopes": ["agent.invoke", "task.read"],
+            "tools": ["fleetops_read-get_telemetry", "fleetops_read-list_routes"]
           },
           "fleetops_command": {
             "authorization_server_id": "${OKTA_COMMAND_LANE_AS_ID}",
             "target_resource_url": "${FLEETOPS_COMMAND_RESOURCE_URL}",
-            "scopes": ["fleet.dispatch.command"],
-            "tools": ["dispatch_vehicle"]
+            "scopes": ["agent.invoke", "task.dispatch"],
+            "tools": ["fleetops_command-dispatch_vehicle"]
           }
         }
       }

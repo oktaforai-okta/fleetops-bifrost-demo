@@ -25,10 +25,16 @@ import (
 	"time"
 )
 
-const (
-	scopeTelemetryRead = "fleet.telemetry.read"
-	scopeRoutesRead    = "fleet.routes.read"
-	scopeDispatchCmd   = "fleet.dispatch.command"
+// The scope each tool demands is configurable, because scope names live in the tenant
+// rather than in this code. If they are hardcoded here and the tenant publishes
+// different ones, this server rejects a token the gateway has just legitimately minted,
+// and the failure reads like a gateway bug when it is only a naming mismatch.
+//
+// The defaults are the original names, so an existing deployment is unaffected.
+var (
+	scopeTelemetryRead = envOr("FLEETOPS_SCOPE_TELEMETRY_READ", "fleet.telemetry.read")
+	scopeRoutesRead    = envOr("FLEETOPS_SCOPE_ROUTES_READ", "fleet.routes.read")
+	scopeDispatchCmd   = envOr("FLEETOPS_SCOPE_DISPATCH", "fleet.dispatch.command")
 )
 
 // tool describes one callable tool and the scope it demands.
@@ -103,6 +109,11 @@ func (s *server) handleMCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Logged for every request, because "did the gateway even reach this server, and did
+	// this server accept the token" is the question the whole demo turns on, and silence
+	// is indistinguishable from a connection that was never attempted.
+	log.Printf("<- %s %s", r.Method, req.Method)
+
 	switch req.Method {
 	case "initialize":
 		// The handshake is unauthenticated on purpose. A client has to be able to
@@ -164,23 +175,33 @@ func (s *server) handleToolCall(w http.ResponseWriter, r *http.Request, req rpcR
 	// Authorization happens here, in the resource server, not only in the gateway.
 	raw, err := bearerFrom(r)
 	if err != nil {
+		log.Printf("   tools/call %s DENIED: %v", t.Name, err)
 		writeToolError(w, req.ID, "unauthorized: "+err.Error())
 		return
 	}
 
 	claims, err := s.validator.Validate(raw)
 	if err != nil {
+		log.Printf("   tools/call %s DENIED, token rejected: %v", t.Name, err)
 		writeToolError(w, req.ID, "token rejected: "+err.Error())
 		return
 	}
 
 	if !claims.HasScope(t.Scope) {
+		log.Printf("   tools/call %s DENIED, needs %s, token carries [%s]",
+			t.Name, t.Scope, strings.Join(claims.Scp, " "))
 		writeToolError(w, req.ID, fmt.Sprintf(
 			"forbidden: %s requires scope %s, this token carries [%s]",
 			t.Name, t.Scope, strings.Join(claims.Scp, " "),
 		))
 		return
 	}
+
+	// The accepted case, with the delegation chain that authorized it. This is the line
+	// worth putting on screen: it names the acting agent, which a shared service account
+	// could never distinguish.
+	log.Printf("   tools/call %s ACCEPTED, scope %s, chain %s, jti %s",
+		t.Name, t.Scope, strings.Join(claims.Chain(), " <- "), claims.Jti)
 
 	body, err := t.Handle(params.Arguments, claims)
 	if err != nil {

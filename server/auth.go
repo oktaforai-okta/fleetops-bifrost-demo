@@ -42,10 +42,27 @@ type Actor struct {
 }
 
 // Chain renders the delegation chain, subject first then each actor outward.
+//
+// Okta terminates the nested act claim by restating the subject as the innermost
+// actor's own delegator, so walking act to the end yields one more entry than there are
+// principals. On this tenant the raw walk produces
+//
+//	service  <-  agent  <-  service
+//
+// for a two-party delegation, which reads as though the service appeared twice and is
+// the wrong claim to put on screen: this line is the whole point of the demo.
+//
+// So a trailing entry is dropped, and ONLY when it is identical to the subject. A
+// longer chain that genuinely revisits a principal mid-way is left alone, because
+// collapsing duplicates in general would hide a real delegation loop, which is
+// something you would want to see rather than tidy away.
 func (c *Claims) Chain() []string {
 	chain := []string{c.Sub}
 	for a := c.Act; a != nil; a = a.Act {
 		chain = append(chain, a.Sub)
+	}
+	if n := len(chain); n > 1 && chain[n-1] == c.Sub {
+		chain = chain[:n-1]
 	}
 	return chain
 }

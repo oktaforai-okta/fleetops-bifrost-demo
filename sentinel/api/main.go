@@ -113,6 +113,24 @@ func handleRun(cfg *config) http.HandlerFunc {
 			return
 		}
 
+		mode, err := parseMode(r.URL.Query().Get("mode"))
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		path, err := parsePath(r.URL.Query().Get("path"))
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		if mode == modeDeny && path == pathOkta && !cfg.canDeny() {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "no refusal run is configured: set SENTINEL_DENY_SCOPES to a scope " +
+					"the agent's connection does not grant",
+			})
+			return
+		}
+
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			writeJSON(w, http.StatusInternalServerError,
@@ -143,30 +161,68 @@ func handleRun(cfg *config) http.HandlerFunc {
 		}
 
 		states := map[string]string{}
-		runChain(cfg, func(ev stepEvent) {
+		emit := func(ev stepEvent) {
 			states[ev.Step] = ev.State
 			// Step and state only. A token value must never reach the log.
 			log.Printf("step %s: %s", ev.Step, ev.State)
 			send("step", ev)
-		})
+		}
 
-		send("done", map[string]any{
-			"ok":      states[stepAccessToken] == stateIssued,
-			"outcome": outcome(states),
-		})
+		if path == pathGateway {
+			runGateway(cfg, mode, emit)
+		} else {
+			runChain(cfg, mode, emit)
+		}
+
+		tool, _ := cfg.gatewayCall(mode)
+		payload := map[string]any{
+			// ok reports only whether the run reached its end successfully. It is
+			// deliberately NOT the same question as whether the run did what was asked: a
+			// refusal run that is refused has ok false and has succeeded completely. The
+			// frontend words the verdict from mode and outcome together, because only it
+			// knows which was intended.
+			"ok":      states[finalStep(path)] == stateIssued,
+			"outcome": outcome(states, path),
+			"mode":    string(mode),
+			"path":    string(path),
+		}
+		if path == pathGateway {
+			payload["requested_tool"] = tool
+		} else {
+			payload["requested_scopes"] = cfg.bindingFor(mode).Scopes
+		}
+		send("done", payload)
 	}
+}
+
+// stepOrder is the sequence of steps a path emits, in the order they run.
+func stepOrder(path runPath) []string {
+	if path == pathGateway {
+		return []string{stepCallerToken, stepGatewayCall, stepResourceResult}
+	}
+	return []string{stepWatchToken, stepIDJAG, stepAccessToken}
+}
+
+// finalStep is the step whose success means the whole run succeeded.
+func finalStep(path runPath) string {
+	order := stepOrder(path)
+	return order[len(order)-1]
 }
 
 // outcome summarises a finished run in one line, naming the step that decided it and
 // keeping a refusal distinct from a call that never reached a decision.
-func outcome(states map[string]string) string {
-	if states[stepAccessToken] == stateIssued {
+func outcome(states map[string]string, path runPath) string {
+	if states[finalStep(path)] == stateIssued {
+		if path == pathGateway {
+			return "the tool call went through: Okta authorized it, Bifrost enforced that " +
+				"decision, and the MCP server accepted the token"
+		}
 		return "issued: the Tasking Agent's authorization server granted a token to the chain"
 	}
-	for _, step := range []string{stepWatchToken, stepIDJAG, stepAccessToken} {
+	for _, step := range stepOrder(path) {
 		switch states[step] {
 		case stateRefused:
-			return "refused by Okta at " + step
+			return "refused at " + step
 		case stateFailed:
 			return "no decision reached at " + step + ": the call did not complete, which is not a denial"
 		}

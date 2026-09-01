@@ -54,10 +54,14 @@ misattribute a failure.
 
 ## What it will not do
 
-The RFC 8693 `act` claim is what would carry a delegation chain. It is **not documented in
-any of Okta's published pages, and has never been observed from this tenant.**
+The RFC 8693 `act` claim is what carries the delegation chain. It **is** present on tokens
+from this tenant, along with a `sub_profile` at each level typing the party as `service` or
+`ai_agent`. Both were confirmed by decoding real tokens from a live run.
 
-So the app renders the claims that are actually present and nothing else:
+Neither is **documented in any of Okta's published pages.** Say exactly that when presenting
+this: verified empirically, not documented. Do not describe either as documented behaviour.
+
+The app assumes none of it. It renders the claims that are actually present and nothing else:
 
 - If `act` is present, the chain is read from it and shown outermost-subject-first.
 - If `act` is absent, the page says so plainly, and shows `sub`, `cid` and `uid` instead,

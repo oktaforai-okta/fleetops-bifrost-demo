@@ -30,15 +30,17 @@
 
 * { box-sizing: border-box; }
 
+/* 18px rather than 16: this page is presented on a projector and read from the back of a
+ * room, so the base size errs large and everything scales from it. */
 body {
   margin: 0;
   padding: 0 1.25rem 4rem;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 18px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-main, .masthead, .footer { max-width: 1140px; margin: 0 auto; }
+main, .masthead, .footer { max-width: 1240px; margin: 0 auto; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px;
@@ -59,20 +61,100 @@ main, .masthead, .footer { max-width: 1140px; margin: 0 auto; }
   padding: 1rem 0 1.5rem;
 }
 
-button.primary {
+button.primary, button.secondary {
   font: inherit; font-weight: 600;
-  padding: .55rem 1.1rem;
-  color: #ffffff; background: #1b1b1b;
-  border: 1px solid #1b1b1b; border-radius: 5px;
+  padding: .6rem 1.2rem;
+  border-radius: 5px;
   cursor: pointer;
 }
+button.primary {
+  color: #ffffff; background: #1b1b1b;
+  border: 1px solid #1b1b1b;
+}
 button.primary:hover:not(:disabled) { background: #333333; }
-button.primary:disabled { opacity: .55; cursor: default; }
+
+/* The refusal run is a peer action, not a lesser one, so it is a full-size button. It is
+ * outlined rather than filled only so the granted run reads as the default path. */
+button.secondary {
+  color: var(--ink); background: #ffffff;
+  border: 2px solid var(--border-strong);
+}
+button.secondary:hover:not(:disabled) { border-color: var(--ink); }
+button.secondary code { font-size: .9em; }
+
+button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: default; }
 
 .status { margin: 0; color: var(--muted); }
 .status.busy { color: var(--in-progress); font-weight: 600; }
 .status.good { color: var(--issued); font-weight: 600; }
 .status.bad { color: var(--refused); font-weight: 600; }
+
+/* ---------------------------------------------------------------------- path chooser */
+
+.paths-section { max-width: 1240px; margin: 0 auto; padding-top: 1.5rem; }
+.paths { display: flex; gap: .75rem; flex-wrap: wrap; }
+
+.path-button {
+  font: inherit; text-align: left; cursor: pointer;
+  flex: 1 1 22rem;
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .8rem 1rem;
+  background: #ffffff; color: var(--ink);
+  border: 2px solid var(--border); border-radius: 6px;
+}
+.path-button:hover:not(:disabled) { border-color: var(--border-strong); }
+/* The selected demonstration. Weight and a left bar rather than colour, since colour on
+ * this page means run state and this is not a run state. */
+.path-button.selected {
+  border-color: var(--ink); border-left-width: 8px;
+  background: var(--panel);
+}
+.path-button:disabled { opacity: .6; cursor: default; }
+.path-name { font-size: 1.05rem; font-weight: 700; }
+.path-note { font-size: .85rem; color: var(--muted); }
+
+/* -------------------------------------------------------------------------- verdict */
+
+/* The one-line answer, sized to be read from the back of a room. Colour carries state
+ * only; the headline says the same thing in words. */
+.verdict {
+  max-width: 1240px; margin: 0 auto 1.5rem;
+  border: 2px solid var(--border-strong); border-left-width: 10px;
+  border-radius: 6px; padding: 1.1rem 1.4rem;
+  background: #ffffff;
+}
+.verdict-headline { margin: 0; font-size: 1.65rem; font-weight: 700; line-height: 1.25; }
+.verdict-sub { margin: .5rem 0 0; max-width: 88ch; color: var(--ink); }
+
+.verdict-issued { border-color: var(--issued); background: var(--issued-fill); }
+.verdict-issued .verdict-headline { color: var(--issued); }
+.verdict-refused { border-color: var(--refused); background: var(--refused-fill); }
+.verdict-refused .verdict-headline { color: var(--refused); }
+.verdict-no-decision { border-color: var(--failed); background: var(--failed-fill); }
+.verdict-no-decision .verdict-headline { color: var(--failed); }
+/* A refusal run that was granted instead. Not a failure of the app, but it is not the
+ * expected result either, so it is marked rather than tinted like a success. */
+.verdict-unexpected { border-color: var(--in-progress); background: var(--in-progress-fill); }
+.verdict-unexpected .verdict-headline { color: var(--in-progress); }
+.verdict-unknown { border-color: var(--idle); background: var(--idle-fill); }
+
+.verdict-quote-label {
+  margin: .9rem 0 .3rem; font-size: .8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+}
+.verdict-quote {
+  background: #ffffff; border: 1px solid var(--border-strong);
+  border-radius: 4px; padding: .7rem .9rem;
+}
+/* Okta's own words, quoted at a size that survives a projector. */
+.verdict-code {
+  font-family: var(--mono); font-size: 1.25rem; font-weight: 700;
+  color: var(--refused); overflow-wrap: anywhere;
+}
+.verdict-desc {
+  font-family: var(--mono); font-size: 1.05rem; margin-top: .35rem;
+  overflow-wrap: anywhere; line-height: 1.45;
+}
 
 /* --------------------------------------------------------------------------- panels */
 
@@ -91,21 +173,30 @@ button.primary:disabled { opacity: .55; cursor: default; }
 /* -------------------------------------------------------------------------- diagram */
 
 #diagram-wrap { overflow-x: auto; }
-#chain { width: 100%; min-width: 900px; height: auto; display: block; }
+#chain { width: 100%; min-width: 1040px; height: auto; display: block; }
 
 .node, .edge { cursor: pointer; }
 .node:focus-visible, .edge:focus-visible { outline: 3px solid #1b1b1b; outline-offset: 2px; }
 
+/* Diagram type is sized for projector distance. The name is the largest thing in a box
+ * because it is what identifies the principal; the id lives in the detail panel, not here. */
 .node-box { fill: var(--idle-fill); stroke: var(--idle); stroke-width: 1; }
-.node-role { font-size: 10px; letter-spacing: .09em; fill: var(--muted); }
-.node-name { font-size: 15px; font-weight: 650; fill: var(--ink); }
-.node-resource { font-size: 11px; font-family: var(--mono); fill: var(--muted); }
-.node-state { font-size: 12px; font-weight: 650; }
+.node-role { font-size: 13px; letter-spacing: .1em; font-weight: 650; fill: var(--muted); }
+.node-name { font-size: 21px; font-weight: 700; fill: var(--ink); }
+.node-profile { font-size: 15px; font-family: var(--mono); font-weight: 600; fill: var(--ink); }
+.node-resource { font-size: 13px; font-family: var(--mono); fill: var(--muted); }
+.node-state { font-size: 15px; font-weight: 700; }
 
-.edge-hit { stroke: transparent; stroke-width: 30; }
-.edge-line { stroke: var(--idle); stroke-width: 2; fill: none; }
-.edge-label { font-size: 12px; font-weight: 650; fill: var(--ink); }
-.edge-state { font-size: 12px; font-weight: 650; }
+/* An aside is not a step in the flow. Its box is smaller and its connector is dashed and
+ * labelled, so it cannot be read as a hop that something travels along. */
+.aside-link { stroke: var(--muted); stroke-width: 2; stroke-dasharray: 5 5; }
+.aside-link-label { font-size: 13px; font-style: italic; fill: var(--muted); }
+
+.edge-hit { stroke: transparent; stroke-width: 40; }
+.edge-line { stroke: var(--idle); stroke-width: 2.5; fill: none; }
+.edge-label { font-size: 14px; font-weight: 700; letter-spacing: .08em; fill: var(--muted); }
+.edge-action { font-size: 15px; font-weight: 600; fill: var(--ink); }
+.edge-state { font-size: 15px; font-weight: 700; }
 
 /* State is carried by colour AND by outline weight and dash pattern, so the diagram is
  * readable without colour discrimination. */
@@ -247,6 +338,21 @@ button.link {
 
 .token-box { margin-top: .8rem; }
 
+/* What the upstream resource server said, verbatim. Monospace and unstyled beyond that:
+ * the whole value of this block is that it is not this page's words. */
+.resource-box { margin-top: .9rem; }
+pre.verbatim {
+  font-size: .95rem; line-height: 1.45;
+  background: #ffffff; border: 1px solid var(--border-strong);
+  white-space: pre-wrap;
+}
+/* The server's account of the token it received. Given the weight of a finding, because
+ * it is the independent witness in the demo. */
+pre.verbatim.attribution {
+  border: 2px solid var(--issued); background: var(--issued-fill);
+  font-size: 1rem;
+}
+
 /* The act paragraphs are the honesty of the page, so they are given real weight rather
  * than being tucked into a footnote. */
 .act-present, .act-absent {
@@ -254,7 +360,65 @@ button.link {
 }
 .act-present { border: 1px solid var(--issued); background: var(--issued-fill); }
 .act-absent { border: 1px solid var(--in-progress); background: var(--in-progress-fill); }
-.chain { margin: .3rem 0 .6rem; }
+
+/* ----------------------------------------------------------------- delegation chain */
+
+/* The chain is the point of the page, so it is the largest thing in the detail panel. */
+.chain-sentence {
+  margin: .7rem 0 1rem; max-width: 84ch;
+  font-size: 1.2rem; line-height: 1.45; font-weight: 600;
+}
+
+.chain-cards {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem;
+  margin: .5rem 0 .8rem;
+}
+
+.chain-card {
+  flex: 1 1 15rem; min-width: 14rem;
+  border: 2px solid var(--border-strong); border-radius: 5px;
+  padding: .7rem .9rem; background: #ffffff;
+}
+/* Role is distinguished by border weight and by the words in the card, not by hue: the
+ * two are different positions in a chain, not two different states. */
+.chain-card.role-subject { border-left-width: 8px; border-left-color: var(--ink); }
+.chain-card.role-actor { border-left-width: 8px; border-left-color: var(--muted); }
+
+.chain-role {
+  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--muted);
+}
+.chain-name { font-size: 1.25rem; font-weight: 700; margin: .2rem 0 .35rem; line-height: 1.25; }
+.chain-profile { margin: .2rem 0 .4rem; display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; }
+.chain-profile-src { font-size: .75rem; color: var(--muted); }
+.chain-id { margin-top: .2rem; }
+.chain-id code { font-size: .8rem; color: var(--muted); }
+
+/* The connector. Its text states the direction, so the chain cannot be read backwards. */
+.chain-arrow {
+  flex: 0 0 auto; align-self: center;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 .3rem; color: var(--muted);
+}
+.chain-arrow-mark { font-size: 1.3rem; line-height: 1; }
+.chain-arrow-text { font-size: .78rem; text-align: center; max-width: 8rem; }
+
+/* sub_profile, wherever it appears. Monospace because it is a claim value, verbatim. */
+.profile-chip {
+  font-family: var(--mono); font-size: .95rem; font-weight: 700;
+  border: 2px solid var(--ink); border-radius: 3px;
+  padding: .05rem .4rem; background: #ffffff;
+}
+.profile-chip.small { font-size: .8rem; font-weight: 600; border-width: 1px; margin-left: .4rem; }
+
+/* A friendly name offered next to a raw id in the claims table. The id stays primary. */
+.id-name { font-weight: 650; }
+
+.chain-note {
+  border: 1px solid var(--border-strong); border-radius: 4px;
+  background: var(--panel); padding: .6rem .8rem; margin: .6rem 0;
+  max-width: 88ch; font-size: .95rem;
+}
 
 table.claims { border-collapse: collapse; width: 100%; margin: .3rem 0 .6rem; }
 table.claims th, table.claims td {
