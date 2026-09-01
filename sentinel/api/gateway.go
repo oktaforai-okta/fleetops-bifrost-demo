@@ -156,10 +156,10 @@ func runGateway(cfg *config, mode runMode, emit emitFunc) {
 			Description: result.Text,
 			Source:      sourceGateway,
 		}
-		ev.Detail = "Bifrost refused the call before it reached the MCP server, and the " +
-			"reason it gives is Okta's. This is the enforcement point obeying the decision " +
-			"point. Okta's wording is reproduced below exactly as the gateway relayed it; " +
-			"this app did not reword it and did not reach Okta itself on this call."
+		// Two sentences, and the second one is the load-bearing one: it is the claim a
+		// sceptic will test. Keep the provenance point if this is ever shortened further.
+		ev.Detail = "Bifrost stopped the call before the MCP server saw it. " +
+			"The wording below is Okta's, relayed by the gateway and not reworded here."
 		emit(ev)
 
 		skip(emit, stepResourceResult, "hop2", labelResourceResult, "fleet", "fleet",
