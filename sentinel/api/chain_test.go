@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	oktabifrost "github.com/oktaforai-okta/okta-bifrost-plugin/plugin"
@@ -82,6 +83,10 @@ func TestRedemptionFailedPrefersStructureOverErrorText(t *testing.T) {
 // A refusal is a decision Okta made. A transport failure is not. Conflating them claims
 // Okta denied something it was never asked, which is the same class of error as drawing a
 // delegation chain that is not on the token.
+//
+// outcomeState decides this with errors.As, so what matters is the error's TYPE somewhere
+// in its chain, not its text. The four cases below pin both halves of that: unwrapping
+// works, and text alone is not enough.
 func TestOutcomeStateDistinguishesRefusalFromNoDecision(t *testing.T) {
 	oktaSaidNo := &oktabifrost.OktaError{
 		StatusCode:  400,
@@ -89,18 +94,36 @@ func TestOutcomeStateDistinguishesRefusalFromNoDecision(t *testing.T) {
 		Description: "The following scopes are not allowed for this request: [task.dispatch].",
 	}
 
-	if got := outcomeState(oktaSaidNo); got != stateRefused {
-		t.Errorf("an Okta error body should be %q, got %q", stateRefused, got)
-	}
+	t.Run("a bare Okta error is a refusal", func(t *testing.T) {
+		if got := outcomeState(oktaSaidNo); got != stateRefused {
+			t.Errorf("got %q, want %q", got, stateRefused)
+		}
+	})
 
-	// Wrapped, because the plugin wraps its errors and the type assertion has to see
-	// through that.
-	wrapped := errors.New("id-jag redemption: " + oktaSaidNo.Error())
-	if got := outcomeState(wrapped); got == stateRefused {
-		t.Errorf("a plain error carrying Okta's text is not itself an Okta decision, got %q", got)
-	}
+	// This is the real path, and the case that actually exercises errors.As. The plugin
+	// wraps with %w, so the OktaError is still reachable through the wrapper and the
+	// outcome must survive being wrapped. If this regressed, every genuine Okta refusal
+	// would be misreported as a call that never reached a decision.
+	t.Run("an Okta error wrapped with %w is still a refusal", func(t *testing.T) {
+		wrapped := fmt.Errorf("id-jag redemption: %w", oktaSaidNo)
+		if got := outcomeState(wrapped); got != stateRefused {
+			t.Errorf("got %q, want %q: errors.As must see through the plugin's wrapping", got, stateRefused)
+		}
+	})
 
-	if got := outcomeState(errors.New(`Post "https://x.invalid": no such host`)); got == stateRefused {
-		t.Errorf("a transport failure must not be reported as a refusal, got %q", got)
-	}
+	// A lookalike. Same text, no OktaError anywhere in the chain, because errors.New does
+	// not wrap. Carrying Okta's wording is not the same as being Okta's decision, and
+	// deciding on substrings rather than types is how that distinction gets lost.
+	t.Run("a plain error merely quoting Okta is not a refusal", func(t *testing.T) {
+		lookalike := errors.New("id-jag redemption: " + oktaSaidNo.Error())
+		if got := outcomeState(lookalike); got == stateRefused {
+			t.Errorf("got %q: text alone must not qualify as an Okta decision", got)
+		}
+	})
+
+	t.Run("a transport failure is not a refusal", func(t *testing.T) {
+		if got := outcomeState(errors.New(`Post "https://x.invalid": no such host`)); got == stateRefused {
+			t.Errorf("got %q, want anything but %q", got, stateRefused)
+		}
+	})
 }
