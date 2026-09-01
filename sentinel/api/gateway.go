@@ -103,9 +103,10 @@ func runGateway(cfg *config, mode runMode, emit emitFunc) {
 
 	ev = callerEvent(stateIssued)
 	ev.Token = describe(kindAccessToken, callerToken, cfg.namer())
-	ev.Detail = "This is the only token this app holds. Note it carries no act claim: it " +
-		"is the start of the chain, not a delegation. The delegated token that Bifrost " +
-		"mints next is never seen by this app, so nothing about its claims is asserted here."
+	// The "this app never holds the delegated token" point belongs on the resource_result
+	// step, not here, and used to be on both. Here the useful fact is narrower: no act
+	// claim yet, because this is the start of the chain rather than a delegation.
+	ev.Detail = "No act claim yet: this is the start of the chain, not a delegation."
 	emit(ev)
 
 	// --- Step 2: the call through the gateway ------------------------------------------
@@ -192,9 +193,7 @@ func runGateway(cfg *config, mode runMode, emit emitFunc) {
 	}
 
 	ev = callEvent(stateIssued)
-	ev.Detail = "Bifrost obtained a delegated token from Okta and the call went through. " +
-		"That token is not shown here because this app never holds it; what the MCP server " +
-		"made of it is the next step."
+	ev.Detail = "Okta authorized it, Bifrost minted the token and made the call."
 	emit(ev)
 
 	// --- Step 3: what the resource server said -----------------------------------------
@@ -208,11 +207,11 @@ func runGateway(cfg *config, mode runMode, emit emitFunc) {
 		Target: "fleet",
 		Tool:   tool,
 		State:  stateIssued,
-		Detail: "The MCP server validated the token itself, independently of the gateway, " +
-			"and appended its own account of what it found. Both blocks below are its " +
-			"words verbatim. This is the strongest evidence in the demo precisely because " +
-			"it does not come from this page: the resource server read the delegation " +
-			"chain off the credential it was handed.",
+		// This is the ONE place the "not from this page" point is made, because this is the
+		// step it qualifies. Keep it to two sentences: the claim is strong enough that
+		// restating it makes it sound weaker.
+		Detail: "Verbatim from the MCP server, which validated the token itself. " +
+			"This app never held that token, so none of it is our decoding.",
 		Result: &resourceResult{
 			Body:        body,
 			Attribution: attribution,

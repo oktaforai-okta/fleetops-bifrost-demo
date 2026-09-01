@@ -23,9 +23,102 @@
     <strong>Okta decides. Bifrost enforces.</strong> Every refusal below is Okta&rsquo;s own
     wording; the gateway holds no policy of its own.
   </p>
+
+  <!-- Two tabs, toggled by the small inline script at the end of this file rather than by
+       app.js. Kept separate on purpose: app.js owns the demonstration, and a presenter
+       needing to explain what a party IS should not be able to break the run logic. -->
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button id="tab-btn-demo" type="button" class="tab selected" role="tab"
+            aria-selected="true" aria-controls="tab-demo">The demonstration</button>
+    <button id="tab-btn-about" type="button" class="tab" role="tab"
+            aria-selected="false" aria-controls="tab-about">What am I looking at?</button>
+  </nav>
 </header>
 
 <main>
+
+<div id="tab-about" role="tabpanel" aria-labelledby="tab-btn-about" hidden>
+
+  <section class="panel">
+    <h2>The four parties</h2>
+
+    <h3>Okta</h3>
+    <p>
+      Okta is where identities live. Usually people; here it also holds the agent&rsquo;s own
+      identity and the rules about what that agent may do.
+    </p>
+    <p>
+      <strong>What it is doing here:</strong> answering one question, over and over. Would I
+      give this agent a credential for this thing, right now? Yes, and it issues one that
+      lasts minutes. No, and it says why.
+    </p>
+
+    <h3>Sentinel Watch Service</h3>
+    <p>
+      A piece of software that starts the work. Not a person and not an agent, just a plain
+      service account, the sort of thing a scheduler or an alerting system would be.
+    </p>
+    <p>
+      <strong>What it is doing here:</strong> asking for something to be done, and holding
+      the only credential this web page ever sees. It cannot do the work itself.
+    </p>
+
+    <h3>Bifrost</h3>
+    <p>
+      The gateway. Every tool call an agent makes passes through it. It is the customer&rsquo;s
+      existing component, not something Okta supplies.
+    </p>
+    <p>
+      <strong>What it is doing here:</strong> before each call it asks Okta whether the agent
+      is still allowed. If yes, it attaches a fresh short-lived credential and passes the call
+      on. If no, it stops the call. It holds no rules of its own, which is the point: swap the
+      rules in Okta and the gateway&rsquo;s behaviour changes with no redeploy.
+    </p>
+
+    <h3>Fleet Ops MCP server</h3>
+    <p>
+      The system being protected. A stand-in for a real operational one. It has cheap reads,
+      telemetry and routes, and one action that moves a physical asset, dispatch. Those are
+      not the same risk, so they do not carry the same permission.
+    </p>
+    <p>
+      <strong>What it is doing here:</strong> checking the credential itself, on its own, and
+      reporting what it found. It does not take the gateway&rsquo;s word for anything, so going
+      around the gateway does not get you in.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Why chain of custody</h2>
+    <p>
+      Because &ldquo;an agent did it&rdquo; is not a useful answer.
+    </p>
+    <p>
+      Most agent deployments today share one account. Every call arrives looking identical,
+      and three problems follow:
+    </p>
+    <ul>
+      <li>You cannot tell which agent did what. The log shows the shared account.</li>
+      <li>You cannot switch one agent off without switching all of them off, so in practice
+          nobody switches any of them off.</li>
+      <li>Permissions grow to the widest thing anyone might need, so read-only agents end up
+          holding write access.</li>
+    </ul>
+    <p>
+      Chain of custody means each credential carries two facts instead of one: <strong>who
+      asked</strong>, and <strong>which agent acted</strong>. The receiving system is told
+      both and can decide on both. That is what you are watching on the diagram.
+    </p>
+    <p class="hint">
+      One honest limit: this says whether an agent may dispatch. It does not say whether it
+      may dispatch <em>that particular</em> vehicle. Per-object rules are a separate layer on
+      top of this one.
+    </p>
+  </section>
+
+</div>
+
+<div id="tab-demo" role="tabpanel" aria-labelledby="tab-btn-demo">
 
   <section class="paths-section" aria-labelledby="paths-h">
     <h2 id="paths-h" class="sr-only">Which demonstration to run</h2>
@@ -112,6 +205,8 @@
     </div>
   </section>
 
+</div><!-- /tab-demo -->
+
 </main>
 
 <footer class="footer">
@@ -139,5 +234,29 @@
   }
 </script>
 <script src="app.js"></script>
+
+<!-- Tab toggle. Deliberately here and not in app.js: app.js owns the demonstration, and
+     explaining who the parties are must not be able to break the run logic. It also runs
+     AFTER app.js, so if app.js were ever to throw, the tabs still work and the presenter can
+     at least talk through the explainer. -->
+<script>
+  (function () {
+    var tabs = [
+      { btn: document.getElementById('tab-btn-demo'),  panel: document.getElementById('tab-demo') },
+      { btn: document.getElementById('tab-btn-about'), panel: document.getElementById('tab-about') }
+    ];
+    function show(active) {
+      tabs.forEach(function (t) {
+        var on = t === active;
+        t.panel.hidden = !on;
+        t.btn.classList.toggle('selected', on);
+        t.btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    tabs.forEach(function (t) {
+      if (t.btn && t.panel) t.btn.addEventListener('click', function () { show(t); });
+    });
+  })();
+</script>
 </body>
 </html>

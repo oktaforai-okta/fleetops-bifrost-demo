@@ -646,11 +646,9 @@ function renderResourceResult(result) {
   const box = el('div', { class: 'resource-box' });
 
   box.appendChild(el('h5', { text: 'What the MCP server returned' }));
-  box.appendChild(el('p', {
-    class: 'hint',
-    text: 'Verbatim, both blocks. This app did not decode the token being described here: ' +
-          'Bifrost minted it and injected it upstream, so this app never held it.',
-  }));
+  // No caveat paragraph here. The step's own Detail already says this is verbatim from the
+  // server and that this app never held the token, and saying it twice on one screen read
+  // as hedging. If that Detail ever loses the point, put it back here rather than in both.
 
   if (result.body) {
     box.appendChild(el('h6', { text: 'The tool’s own output' }));

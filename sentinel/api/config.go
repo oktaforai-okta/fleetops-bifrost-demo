@@ -483,11 +483,13 @@ func (c *config) gatewayView(unset func(string) string, tools []string, why stri
 				// make. The tool name is reported instead, and the scopes appear where
 				// they are actually known: in Okta's refusal, and in the MCP server's
 				// account of the token it received.
-				Note: "Bifrost exchanges the caller's token for an ID-JAG at the org " +
-					"authorization server, redeems it at the target's, and injects the " +
-					"result upstream. That delegated token never passes through this app, " +
-					"so its claims are not decoded here. What the MCP server made of it is " +
-					"reported in its own words instead.",
+				// Kept to one sentence deliberately. This is presented on a shared screen,
+				// and the "this app never holds the token" point used to be repeated in
+				// four places, which reads as hedging rather than as rigour. It is now
+				// stated once, on the step where the server's own account appears, which
+				// is where it actually matters.
+				Note: "Bifrost gets an ID-JAG from Okta, redeems it for a token, and " +
+					"injects that token upstream.",
 			},
 		},
 		Steps: []stepShape{

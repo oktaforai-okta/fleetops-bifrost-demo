@@ -469,3 +469,37 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
 
    To show it in the UI again, delete this one rule. */
 .path-button[data-path="okta"] { display: none; }
+
+/* Tab strip. Two panels: the demonstration, and a plain-English explainer of who the
+   parties are. The explainer exists because the first question from a non-technical viewer
+   is "what is that box", and answering it inside the demo view is what made the demo view
+   too wordy in the first place. */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.9rem;
+  border-bottom: 1px solid var(--rule, #d8dbe0);
+}
+.tabs .tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted, #5a6270);
+  cursor: pointer;
+}
+.tabs .tab:hover { color: inherit; }
+.tabs .tab.selected {
+  color: inherit;
+  font-weight: 600;
+  border-bottom-color: currentColor;
+}
+#tab-about h3 {
+  margin: 1.3rem 0 0.3rem;
+  font-size: 1rem;
+}
+#tab-about p { margin: 0.35rem 0; max-width: 62ch; }
+#tab-about ul { max-width: 62ch; }
+#tab-about li { margin: 0.25rem 0; }
