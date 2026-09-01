@@ -26,6 +26,23 @@
   --skipped-fill: #f3f3f3;
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Named properly rather than left to a fallback, so the tab strip and the collapsed
+   * reference blocks share the same rule colour as everything else. */
+  --rule: #dcdcdc;
+  --fg: #1b1b1b;
+
+  /* Depth, two steps only: cards at rest, and the one element that should lift off the
+   * page. Neutral grey rather than tinted, so a shadow never reads as a state colour. */
+  --shadow-card: 0 1px 2px rgba(16, 18, 22, .05), 0 1px 3px rgba(16, 18, 22, .05);
+  --shadow-lift: 0 1px 3px rgba(16, 18, 22, .08), 0 6px 16px rgba(16, 18, 22, .09);
+
+  --radius: 9px;
+  --radius-sm: 6px;
+
+  /* Interaction tints. Grey, for the same reason the shadows are grey. */
+  --hover-wash: #f1f2f4;
+  --chip: #f1f2f4;
 }
 
 * { box-sizing: border-box; }
@@ -48,30 +65,60 @@ main, .masthead, .footer { max-width: 1240px; margin: 0 auto; }
   clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+/* One focus treatment for everything interactive. Ink rather than a hue, because every hue
+ * on this page means a run state, and offset outward so it stays visible against the dark
+ * primary button as well as against white. */
+:where(button, a, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
 /* ------------------------------------------------------------------------- masthead */
 
-.masthead { padding: 2rem 0 1rem; }
-.masthead h1 { margin: 0 0 .5rem; font-size: 1.6rem; letter-spacing: -0.01em; }
+/* Trimmed from 2rem. Every pixel spent above the fold is a pixel the flow diagram does not
+ * get, and the diagram is the demonstration. */
+.masthead { padding: 1.4rem 0 .8rem; }
+.masthead h1 {
+  margin: 0 0 .4rem;
+  font-size: 1.75rem; line-height: 1.2;
+  letter-spacing: -0.02em;
+}
 .thesis { margin: 0; max-width: 62ch; color: var(--muted); }
+/* The claim of the whole page. It gets full ink weight inside an otherwise muted line, so
+ * the eye picks it up before anything else in the header. */
+.thesis strong { color: var(--ink); }
 
 /* ------------------------------------------------------------------------- controls */
 
 .controls {
-  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  padding: 1rem 0 1.5rem;
+  display: flex; align-items: center; gap: .85rem; flex-wrap: wrap;
+  padding: .85rem 0 1.1rem;
 }
 
 button.primary, button.secondary {
-  font: inherit; font-weight: 600;
-  padding: .6rem 1.2rem;
-  border-radius: 5px;
+  font: inherit; font-weight: 650;
+  padding: .6rem 1.25rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease,
+              box-shadow 140ms ease, transform 90ms ease;
 }
 button.primary {
   color: #ffffff; background: #1b1b1b;
   border: 1px solid #1b1b1b;
+  box-shadow: 0 1px 2px rgba(16, 18, 22, .18);
 }
-button.primary:hover:not(:disabled) { background: #333333; }
+button.primary:hover:not(:disabled) {
+  background: #333333;
+  box-shadow: 0 2px 6px rgba(16, 18, 22, .22);
+}
+/* Pressed. The button moves down onto the page rather than up off it, which is the only
+ * direction a press has ever gone. */
+button.primary:active:not(:disabled) {
+  background: #0d0d0d;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+  transform: translateY(1px);
+}
 
 /* The refusal run is a peer action, not a lesser one, so it is a full-size button. It is
  * outlined rather than filled only so the granted run reads as the default path. */
@@ -79,10 +126,20 @@ button.secondary {
   color: var(--ink); background: #ffffff;
   border: 2px solid var(--border-strong);
 }
-button.secondary:hover:not(:disabled) { border-color: var(--ink); }
-button.secondary code { font-size: .9em; }
+button.secondary:hover:not(:disabled) {
+  border-color: var(--ink);
+  box-shadow: 0 1px 3px rgba(16, 18, 22, .12);
+}
+button.secondary:active:not(:disabled) {
+  background: var(--hover-wash);
+  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .14);
+  transform: translateY(1px);
+}
+button.secondary code { font-size: .9em; background: none; padding: 0; }
 
-button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: default; }
+button.primary:disabled, button.secondary:disabled {
+  opacity: .5; cursor: default; box-shadow: none;
+}
 
 .status { margin: 0; color: var(--muted); }
 .status.busy { color: var(--in-progress); font-weight: 600; }
@@ -91,7 +148,7 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 
 /* ---------------------------------------------------------------------- path chooser */
 
-.paths-section { max-width: 1240px; margin: 0 auto; padding-top: 1.5rem; }
+.paths-section { max-width: 1240px; margin: 0 auto; padding-top: 1.1rem; }
 .paths { display: flex; gap: .75rem; flex-wrap: wrap; }
 
 .path-button {
@@ -100,17 +157,23 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
   display: flex; flex-direction: column; gap: .2rem;
   padding: .8rem 1rem;
   background: #ffffff; color: var(--ink);
-  border: 2px solid var(--border); border-radius: 6px;
+  border: 2px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
 }
-.path-button:hover:not(:disabled) { border-color: var(--border-strong); }
+.path-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lift);
+}
 /* The selected demonstration. Weight and a left bar rather than colour, since colour on
  * this page means run state and this is not a run state. */
 .path-button.selected {
   border-color: var(--ink); border-left-width: 8px;
   background: var(--panel);
+  box-shadow: var(--shadow-card);
 }
-.path-button:disabled { opacity: .6; cursor: default; }
-.path-name { font-size: 1.05rem; font-weight: 700; }
+.path-button:disabled { opacity: .6; cursor: default; box-shadow: none; }
+.path-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
 .path-note { font-size: .85rem; color: var(--muted); }
 
 /* -------------------------------------------------------------------------- verdict */
@@ -118,12 +181,24 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 /* The one-line answer, sized to be read from the back of a room. Colour carries state
  * only; the headline says the same thing in words. */
 .verdict {
-  max-width: 1240px; margin: 0 auto 1.5rem;
-  border: 2px solid var(--border-strong); border-left-width: 10px;
-  border-radius: 6px; padding: 1.1rem 1.4rem;
+  max-width: 1240px; margin: 0 auto 1.1rem;
+  border: 2px solid var(--border-strong); border-left-width: 12px;
+  border-radius: var(--radius); padding: 1.05rem 1.4rem;
   background: #ffffff;
+  /* The one element allowed to lift off the page, because it is the answer. */
+  box-shadow: var(--shadow-lift);
+  /* Runs once, on insertion: app.js builds this box fresh for every run, so a short rise
+   * marks the arrival of a new answer. 180ms, nothing to wait for. */
+  animation: verdict-in 180ms ease-out both;
 }
-.verdict-headline { margin: 0; font-size: 1.65rem; font-weight: 700; line-height: 1.25; }
+@keyframes verdict-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: none; }
+}
+.verdict-headline {
+  margin: 0; font-size: 1.9rem; font-weight: 750;
+  line-height: 1.2; letter-spacing: -0.02em;
+}
 .verdict-sub { margin: .5rem 0 0; max-width: 88ch; color: var(--ink); }
 
 .verdict-issued { border-color: var(--issued); background: var(--issued-fill); }
@@ -139,12 +214,13 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 .verdict-unknown { border-color: var(--idle); background: var(--idle-fill); }
 
 .verdict-quote-label {
-  margin: .9rem 0 .3rem; font-size: .8rem; font-weight: 700;
+  margin: .9rem 0 .3rem; font-size: .82rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
 }
 .verdict-quote {
   background: #ffffff; border: 1px solid var(--border-strong);
-  border-radius: 4px; padding: .7rem .9rem;
+  border-radius: var(--radius-sm); padding: .7rem .9rem;
+  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .05);
 }
 /* Okta's own words, quoted at a size that survives a projector. */
 .verdict-code {
@@ -160,19 +236,34 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 
 .panel {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--panel);
-  padding: 1.25rem 1.4rem;
-  margin-bottom: 1.25rem;
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1.1rem;
+  box-shadow: var(--shadow-card);
 }
-.panel > h2 { margin: 0 0 .35rem; font-size: 1.05rem; }
+/* Panel titles are labels for a region, not headlines. Kept small and lettered out so the
+ * verdict and the diagram stay the two loudest things on the page. */
+.panel > h2 {
+  margin: 0 0 .45rem;
+  font-size: .82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .09em;
+  color: var(--muted);
+}
 .hint { margin: .25rem 0; color: var(--muted); font-size: .875rem; }
 .note { margin: .4rem 0; max-width: 78ch; }
 .warn { color: var(--refused); }
 
 /* -------------------------------------------------------------------------- diagram */
 
-#diagram-wrap { overflow-x: auto; }
+/* A hairline frame with no padding: the SVG reads as a canvas rather than as loose artwork,
+ * and it costs 2px of height, which matters because the diagram must stay above the fold. */
+#diagram-wrap {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
 #chain { width: 100%; min-width: 1040px; height: auto; display: block; }
 
 .node, .edge { cursor: pointer; }
@@ -249,10 +340,11 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
   margin: 1rem 0 .25rem; padding: 0;
   font-size: .875rem; color: var(--muted);
 }
-.legend li { display: flex; align-items: center; gap: .4rem; }
+.legend li { display: flex; align-items: center; gap: .45rem; }
 .swatch {
-  width: 14px; height: 14px; border-radius: 3px; display: inline-block;
+  width: 15px; height: 15px; border-radius: 3px; display: inline-block;
   border: 2px solid var(--idle); background: var(--idle-fill);
+  flex: 0 0 auto;
 }
 .swatch.in_progress { border-color: var(--in-progress); border-style: dashed; background: var(--in-progress-fill); }
 .swatch.issued { border-color: var(--issued); background: var(--issued-fill); }
@@ -263,16 +355,20 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 /* ----------------------------------------------------------------------- step list */
 
 .steps { margin: .5rem 0 0; padding-left: 1.5rem; }
-.steps li { margin-bottom: .4rem; }
+.steps li { margin-bottom: .2rem; }
 
 .step-button {
   font: inherit; text-align: left; cursor: pointer;
-  background: none; border: none; padding: .15rem 0;
+  background: none; border: none;
+  padding: .2rem .45rem; margin-left: -.45rem;
+  border-radius: var(--radius-sm);
   display: flex; gap: .6rem; align-items: baseline;
+  transition: background-color 120ms ease;
 }
+.step-button:hover { background: var(--hover-wash); }
 .step-button:hover .step-label { text-decoration: underline; }
 .step-state {
-  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; min-width: 9.5ch;
 }
 .step.state-idle .step-state { color: var(--idle); }
@@ -290,22 +386,40 @@ button.primary:disabled, button.secondary:disabled { opacity: .5; cursor: defaul
 #detail h6 { margin: .9rem 0 .3rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 
 .kv { margin: .3rem 0; overflow-wrap: anywhere; }
-code { font-family: var(--mono); font-size: .85em; }
+/* Inline claim values and identifiers. A faint chip separates them from prose without
+ * relying on colour, which on this page always means state. */
+code {
+  font-family: var(--mono); font-size: .85em;
+  background: var(--chip); border-radius: 3px;
+  padding: .08em .3em;
+}
+/* No chip inside blocks that are already framed, or inside a button label. */
+pre code, .badge code, button code, .profile-chip code { background: none; padding: 0; }
+
+/* Log and token output. Bumped from .8rem so nothing here falls under 13px on a projector,
+ * and given breathing room between lines, because these blocks get read aloud. */
 pre {
-  font-family: var(--mono); font-size: .8rem;
-  background: #f4f4f4; border: 1px solid var(--border);
-  padding: .5rem .6rem; border-radius: 4px; overflow-x: auto; margin: .3rem 0;
+  font-family: var(--mono); font-size: .85rem; line-height: 1.5;
+  background: #f5f6f7; border: 1px solid var(--border);
+  padding: .65rem .75rem; border-radius: var(--radius-sm);
+  overflow-x: auto; margin: .35rem 0;
+  tab-size: 2;
+  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .04);
 }
 
 button.link {
   font: inherit; color: #17457a; background: none; border: none;
   padding: 0; cursor: pointer; text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 120ms ease;
 }
+button.link:hover { color: var(--ink); }
 
 .card {
-  border: 1px solid var(--border-strong); border-left-width: 4px;
-  border-radius: 5px; background: #ffffff;
+  border: 1px solid var(--border-strong); border-left-width: 5px;
+  border-radius: var(--radius-sm); background: #ffffff;
   padding: .8rem 1rem; margin: .9rem 0;
+  box-shadow: var(--shadow-card);
 }
 .card.state-idle { border-left-color: var(--idle); }
 .card.state-in_progress { border-left-color: var(--in-progress); }
@@ -314,10 +428,12 @@ button.link {
 .card.state-failed { border-left-color: var(--failed); }
 .card.state-skipped { border-left-color: var(--skipped); }
 
+/* .78rem rather than .7rem: 12.6px was the smallest thing on the page and this is read from
+ * the back of a room. */
 .badge {
-  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  border: 1px solid currentColor; border-radius: 3px; padding: .05rem .35rem;
-  vertical-align: .1em;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  border: 1px solid currentColor; border-radius: 3px; padding: .05rem .4rem;
+  vertical-align: .1em; white-space: nowrap;
 }
 .card.state-idle .badge { color: var(--idle); }
 .card.state-in_progress .badge { color: var(--in-progress); }
@@ -376,8 +492,9 @@ pre.verbatim.attribution {
 
 .chain-card {
   flex: 1 1 15rem; min-width: 14rem;
-  border: 2px solid var(--border-strong); border-radius: 5px;
-  padding: .7rem .9rem; background: #ffffff;
+  border: 2px solid var(--border-strong); border-radius: var(--radius-sm);
+  padding: .75rem .95rem; background: #ffffff;
+  box-shadow: var(--shadow-card);
 }
 /* Role is distinguished by border weight and by the words in the card, not by hue: the
  * two are different positions in a chain, not two different states. */
@@ -385,14 +502,14 @@ pre.verbatim.attribution {
 .chain-card.role-actor { border-left-width: 8px; border-left-color: var(--muted); }
 
 .chain-role {
-  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .07em; color: var(--muted);
 }
 .chain-name { font-size: 1.25rem; font-weight: 700; margin: .2rem 0 .35rem; line-height: 1.25; }
 .chain-profile { margin: .2rem 0 .4rem; display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; }
-.chain-profile-src { font-size: .75rem; color: var(--muted); }
-.chain-id { margin-top: .2rem; }
-.chain-id code { font-size: .8rem; color: var(--muted); }
+.chain-profile-src { font-size: .82rem; color: var(--muted); }
+.chain-id { margin-top: .25rem; }
+.chain-id code { font-size: .82rem; color: var(--muted); }
 
 /* The connector. Its text states the direction, so the chain cannot be read backwards. */
 .chain-arrow {
@@ -401,7 +518,7 @@ pre.verbatim.attribution {
   padding: 0 .3rem; color: var(--muted);
 }
 .chain-arrow-mark { font-size: 1.3rem; line-height: 1; }
-.chain-arrow-text { font-size: .78rem; text-align: center; max-width: 8rem; }
+.chain-arrow-text { font-size: .82rem; text-align: center; max-width: 8rem; }
 
 /* sub_profile, wherever it appears. Monospace because it is a claim value, verbatim. */
 .profile-chip {
@@ -409,7 +526,7 @@ pre.verbatim.attribution {
   border: 2px solid var(--ink); border-radius: 3px;
   padding: .05rem .4rem; background: #ffffff;
 }
-.profile-chip.small { font-size: .8rem; font-weight: 600; border-width: 1px; margin-left: .4rem; }
+.profile-chip.small { font-size: .82rem; font-weight: 600; border-width: 1px; margin-left: .4rem; }
 
 /* A friendly name offered next to a raw id in the claims table. The id stays primary. */
 .id-name { font-weight: 650; }
@@ -435,7 +552,11 @@ table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
 
 /* --------------------------------------------------------------------------- footer */
 
-.footer { padding-top: 1rem; color: var(--muted); font-size: .85rem; }
+.footer {
+  margin-top: .5rem; padding-top: .9rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted); font-size: .85rem;
+}
 .footer p { margin: .3rem 0; }
 
 /* Collapsed reference material. This page is presented live, so anything a presenter would
@@ -443,16 +564,35 @@ table.claims tr.absent th, table.claims tr.absent td { color: var(--muted); }
    the fold, and the diagram is the demonstration. */
 details.reference {
   margin-top: 1rem;
-  border-top: 1px solid var(--rule, #d8dbe0);
+  border-top: 1px solid var(--rule);
   padding-top: 0.6rem;
 }
+/* These now fold the long JSON samples in the logs tab, so a summary has to read as a
+   control rather than as a caption. It gets a bordered chip, which is the cheapest thing
+   that says "press me" without an icon or a colour. The native disclosure marker is kept:
+   it is the part a reader already recognises. */
 details.reference > summary {
   cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--muted, #5a6270);
-  padding: 0.2rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  width: fit-content;
+  box-shadow: var(--shadow-card);
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
-details.reference > summary:hover { color: var(--fg, #1a1d23); }
+details.reference > summary:hover {
+  background: var(--hover-wash);
+  border-color: var(--ink);
+  box-shadow: var(--shadow-lift);
+}
+details.reference > summary:active {
+  background: var(--hover-wash);
+  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .14);
+}
 details.reference[open] > summary { margin-bottom: 0.6rem; }
 
 /* GATEWAY-ONLY PRESENTATION.
@@ -470,36 +610,185 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    To show it in the UI again, delete this one rule. */
 .path-button[data-path="okta"] { display: none; }
 
-/* Tab strip. Two panels: the demonstration, and a plain-English explainer of who the
-   parties are. The explainer exists because the first question from a non-technical viewer
-   is "what is that box", and answering it inside the demo view is what made the demo view
-   too wordy in the first place. */
+/* Tab strip. The demonstration, plus the panels a presenter reaches for when asked what a
+   party IS, what the plugin does, or what actually went over the wire. The explainers exist
+   because the first question from a non-technical viewer is "what is that box", and answering
+   it inside the demo view is what made the demo view too wordy in the first place.
+
+   Underline tabs rather than folder tabs: the selected marker is a 3px bar drawn ON the
+   strip's own rule, so the strip stays one clean line however many tabs get added. */
 .tabs {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.15rem;
   margin-top: 0.9rem;
-  border-bottom: 1px solid var(--rule, #d8dbe0);
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
 }
 .tabs .tab {
+  position: relative;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0.45rem 0.75rem;
+  padding: 0.55rem 1rem 0.6rem;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   font: inherit;
-  font-size: 0.9rem;
-  color: var(--muted, #5a6270);
-  cursor: pointer;
-}
-.tabs .tab:hover { color: inherit; }
-.tabs .tab.selected {
-  color: inherit;
+  /* This is the primary navigation on the page now, four panels deep, so it is sized as
+     navigation rather than as a minor control. */
+  font-size: 0.95rem;
   font-weight: 600;
-  border-bottom-color: currentColor;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 140ms ease, background-color 140ms ease;
 }
-#tab-about h3 {
+/* The selected marker. Sits at -1px so it covers the strip's rule rather than stacking on
+   top of it, which is what makes the tab read as attached to the panel below. */
+.tabs .tab::after {
+  content: "";
+  position: absolute;
+  left: 0.5rem; right: 0.5rem; bottom: -1px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  transition: background-color 140ms ease;
+}
+.tabs .tab:hover {
+  color: var(--ink);
+  background: var(--hover-wash);
+}
+.tabs .tab:hover::after { background: var(--border-strong); }
+.tabs .tab.selected {
+  color: var(--ink);
+  font-weight: 700;
+}
+.tabs .tab.selected::after { background: var(--ink); }
+/* The outline would be clipped by the strip's own rule without this. */
+.tabs .tab:focus-visible { outline-offset: -1px; }
+
+/* In the demo tab a panel h2 labels a widget region, so it is a small lettered-out label.
+   In the explainer tabs it is a real section title with h3 subsections under it, so it keeps
+   heading size and weight. Without this the h3s below would outsize their own parent.
+   These tabs are never the thing above the fold, so the extra size costs nothing. */
+#tab-about .panel > h2,
+#tab-plugin .panel > h2,
+#tab-logs .panel > h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+/* Explainer panels. Shared with the demo tab's headings so a presenter switching tabs does
+   not switch typographic worlds. */
+#tab-about h3,
+#tab-plugin h3,
+#tab-logs h3 {
   margin: 1.3rem 0 0.3rem;
-  font-size: 1rem;
+  font-size: 1.02rem;
+  letter-spacing: -0.01em;
 }
-#tab-about p { margin: 0.35rem 0; max-width: 62ch; }
-#tab-about ul { max-width: 62ch; }
-#tab-about li { margin: 0.25rem 0; }
+#tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: 62ch; }
+#tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: 62ch; }
+#tab-about li, #tab-plugin li, #tab-logs li { margin: 0.25rem 0; }
+
+/* Neither of these tabs sits above the fold, so their monospace output can afford the extra
+   size. Appearance is left to pre.log below, which owns every block in these two tabs. */
+#tab-plugin pre, #tab-logs pre { font-size: 0.88rem; }
+
+/* --------------------------------------------------------------- explanatory tables */
+
+/* table.facts carries the prose the customer actually reads, across three of the four tabs,
+   so it is sized close to body text rather than shrunk to fit. Row separators only, no
+   vertical rules: a grid makes a reader trace lines instead of reading across one. */
+table.facts {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6rem 0 0.9rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  /* Auto layout, so a two column label-and-answer table and a three column comparison
+     table each get sensible proportions from their own content. */
+  table-layout: auto;
+}
+
+table.facts th,
+table.facts td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.6rem 1.1rem 0.6rem 0;
+  /* Breaks a long word only when it would otherwise overflow, rather than breaking
+     anywhere, which would chop ordinary prose mid-syllable. */
+  overflow-wrap: break-word;
+}
+table.facts th:last-child,
+table.facts td:last-child { padding-right: 0; }
+
+/* The header row is a label for its column, not content, so it is lettered out and small.
+   The heavier rule underneath it is the only strong line in the table. */
+table.facts thead th {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding-bottom: 0.45rem;
+  border-bottom: 2px solid var(--border-strong);
+  white-space: nowrap;
+}
+
+table.facts tbody td { border-bottom: 1px solid var(--border); }
+/* No trailing rule: the panel edge already closes the table. */
+table.facts tbody tr:last-child td { border-bottom: none; }
+
+/* The first column is a short label or a party name. A preferred width keeps it from taking
+   half the table, and content that genuinely needs more still gets it under auto layout. */
+table.facts tbody td:first-child,
+table.facts thead th:first-child { width: 26%; color: var(--ink); }
+
+/* Three column tables put a party name in the first column, which needs far less room than a
+   label sentence does. Progressive enhancement: where :has() is unsupported the rule is
+   dropped and the 26% above still reads fine. */
+table.facts:has(thead th:nth-child(3)) tbody td:first-child,
+table.facts:has(thead th:nth-child(3)) thead th:first-child { width: 16%; }
+
+/* Emphasis inside a cell is the author's, and it is load bearing here, so it gets full ink
+   rather than inheriting a muted cell colour. */
+table.facts strong { color: var(--ink); }
+
+/* -------------------------------------------------------------- sample machine output */
+
+/* JSON and log lines, verbatim. A tinted panel and a left bar so it reads as something a
+   machine emitted rather than as the page talking, and it scrolls sideways rather than
+   wrapping: a token id broken across two lines cannot be read out loud or compared by eye. */
+pre.log {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: #f5f6f7;
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 0.95rem;
+  margin: 0.5rem 0 0.9rem;
+  tab-size: 2;
+  box-shadow: inset 0 1px 2px rgba(16, 18, 22, .05);
+}
+pre.log code { background: none; padding: 0; font-size: inherit; }
+
+/* ------------------------------------------------------------------- reduced motion */
+
+/* Everything above is a 90 to 180ms state change, so there is nothing to preserve when a
+ * viewer has asked for less movement. Focus outlines and every colour are untouched. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  button.primary:active:not(:disabled),
+  button.secondary:active:not(:disabled) { transform: none; }
+}
