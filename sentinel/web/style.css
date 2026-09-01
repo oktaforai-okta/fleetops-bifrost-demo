@@ -792,3 +792,51 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
   button.primary:active:not(:disabled),
   button.secondary:active:not(:disabled) { transform: none; }
 }
+
+/* Action rows: one per outcome, each with its own Run button.
+   The outcome is a LABEL and the tool is TEXT; only Run is a button. Previously the whole
+   sentence was the button, which made the two rows look like alternative descriptions of
+   one thing rather than two things you can run, and buried the tool name inside a label. */
+.action {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--rule, #d8dbe0);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* A left edge in the outcome's colour, so allowed and refused are distinguishable at a
+   glance and from across a room, before any text is read. */
+.action#action-grant { border-left: 4px solid #1a7f4b; }
+.action#action-deny  { border-left: 4px solid #b3261e; }
+
+.action-verdict {
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.action-verdict.allow  { color: #12653b; }
+.action-verdict.refuse { color: #8c1d18; }
+
+/* The tool name is the thing a customer reads off the screen, so it gets real presence
+   rather than being small print inside a button. */
+.action-tool {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 5px;
+  background: #f1f3f5;
+  color: #1f2328;
+  overflow-wrap: anywhere;
+}
+
+/* Run sits at the end of its row on wide screens, and falls under the tool name on narrow
+   ones rather than squeezing the tool name. */
+.action > button { margin-left: auto; }
+@media (max-width: 640px) {
+  .action > button { margin-left: 0; }
+}

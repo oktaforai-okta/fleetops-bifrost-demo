@@ -1371,12 +1371,27 @@ function selectPath(id) {
   reportPathAvailability();
 }
 
-// labelRunButton names what pressing it will do, which differs by path: the gateway path
-// makes a tool call, the direct path runs the token exchange.
+// labelRunButton fills the ALLOWED row. The buttons stay "Run" and "Run again": the row's
+// label already says what will happen, so repeating it on the button made the button long
+// and the outcome hard to spot. What varies per path is the thing being named, a tool on
+// the gateway path and a scope set on the direct one, and it comes from /api/config rather
+// than from this file.
 function labelRunButton() {
-  const label = state.path === 'gateway' ? 'Call a tool through the gateway' : 'Run the exchange';
-  document.getElementById('run').textContent = label;
-  document.getElementById('rerun').textContent = label + ' again';
+  document.getElementById('run').textContent = 'Run';
+  document.getElementById('rerun').textContent = 'Run again';
+
+  const grant = activePath().grant || {};
+  const target = grant.tool || (grant.scopes || []).join(' ');
+  setActionTool('grant-tool', target);
+}
+
+// setActionTool writes a tool or scope name into an action row, and hides the element when
+// there is nothing to name so an empty box never appears next to a label.
+function setActionTool(id, target) {
+  const node = document.getElementById(id);
+  if (!node) return;
+  node.textContent = target || '';
+  node.hidden = !target;
 }
 
 // reportPathAvailability says plainly when the selected demonstration cannot run. The
@@ -1397,8 +1412,9 @@ function reportPathAvailability() {
 // from the API rather than written into this page, and hides it entirely when the API
 // offers no refusal run. A button that names the wrong scope would be worse than none.
 function setUpDenyButton() {
+  const row = document.getElementById('action-deny');
   const button = document.getElementById('run-deny');
-  if (!button) return;
+  if (!row || !button) return;
 
   const deny = activePath().deny || {};
   // The two paths arrange the refusal differently: the gateway path calls a tool whose
@@ -1406,17 +1422,17 @@ function setUpDenyButton() {
   // thing they will be refused, taken from the API.
   const target = deny.tool || (deny.scopes || []).join(' ');
 
+  // The whole ROW is hidden when there is no refusal run, not just the button. Leaving a
+  // "Tool not allowed" label on screen with no way to run it would read as a broken
+  // control rather than as an absent one.
   if (!deny.available || !target) {
-    button.hidden = true;
+    row.hidden = true;
     return;
   }
 
-  button.hidden = false;
-  clear(button);
-  button.appendChild(el('span', {
-    text: deny.tool ? 'Try a tool it is not allowed: ' : 'Try a scope it does not have: ',
-  }));
-  button.appendChild(el('code', { text: target }));
+  row.hidden = false;
+  button.textContent = 'Run';
+  setActionTool('deny-tool', target);
 }
 
 start();

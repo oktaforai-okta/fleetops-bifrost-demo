@@ -334,7 +334,24 @@ type pathView struct {
 	Principals []principal `json:"principals"`
 	Hops       []hop       `json:"hops"`
 	Steps      []stepShape `json:"steps"`
+	Grant      grantView   `json:"grant"`
 	Deny       denyView    `json:"deny"`
+}
+
+// grantView is the ALLOWED run's shape, the mirror of denyView. It exists so the frontend
+// can name the tool it is about to call rather than hardcoding a guess, which matters
+// because the tool name is configurable per deployment and a label naming the wrong tool
+// would be worse than no label at all.
+type grantView struct {
+	Available bool `json:"available"`
+
+	// Tool is set on the gateway path, where the allowed run calls a tool whose scope the
+	// agent's connection does grant.
+	Tool string `json:"tool,omitempty"`
+
+	// Scopes is set on the direct path, where there is no tool and the run simply asks for
+	// scopes the connection does grant.
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // denyView is the refusal run's shape for a path, so the button that triggers it can name
@@ -497,6 +514,10 @@ func (c *config) gatewayView(unset func(string) string, tools []string, why stri
 			{Step: stepGatewayCall, Hop: "hop2", Label: labelGatewayCall},
 			{Step: stepResourceResult, Hop: "hop2", Label: labelResourceResult},
 		},
+		Grant: grantView{
+			Available: available && c.gatewayTool != "",
+			Tool:      c.gatewayTool,
+		},
 		Deny: denyView{
 			Available: available && c.gatewayDenyTool != "",
 			Tool:      c.gatewayDenyTool,
@@ -576,6 +597,10 @@ func (c *config) directView(unset func(string) string) pathView {
 			{Step: stepWatchToken, Hop: "hop1", Label: labelWatchToken},
 			{Step: stepIDJAG, Hop: "hop2", Label: labelIDJAG},
 			{Step: stepAccessToken, Hop: "hop2", Label: labelAccessToken},
+		},
+		Grant: grantView{
+			Available: c.ready(),
+			Scopes:    c.taskingScopes,
 		},
 		Deny: denyView{
 			Available: c.ready() && c.canDeny(),

@@ -393,15 +393,30 @@ tool handler error   tool="fleetops_command-dispatch_vehicle"
     <div id="paths" class="paths" role="group" aria-label="Which demonstration to run" hidden></div>
   </section>
 
+  <!-- Two rows, one per outcome. The OUTCOME is a label and the TOOL is text; the only
+       button on each row is Run. Previously the whole sentence was the button, which made
+       the two look like alternative descriptions rather than two things you can run, and
+       buried the tool name inside a button label.
+
+       The tool names are filled from /api/config at load, never hardcoded here, because
+       they are configurable per deployment and a row naming the wrong tool would be worse
+       than a row naming none. -->
   <section class="controls" aria-labelledby="controls-h">
     <h2 id="controls-h" class="sr-only">Run controls</h2>
-    <!-- Relabelled per path at load: the gateway path makes a tool call, the direct path
-         runs the exchange. -->
-    <button id="run" type="button" class="primary">Run it</button>
-    <button id="rerun" type="button" class="primary" hidden>Run again</button>
-    <!-- Labelled from /api/config at load, so it names the scope it will actually ask
-         for. Hidden entirely when the API offers no refusal run. -->
-    <button id="run-deny" type="button" class="secondary" hidden>Try a scope it does not have</button>
+
+    <div class="action" id="action-grant">
+      <span class="action-verdict allow">Tool allowed</span>
+      <code class="action-tool" id="grant-tool"></code>
+      <button id="run" type="button" class="primary">Run</button>
+      <button id="rerun" type="button" class="primary" hidden>Run again</button>
+    </div>
+
+    <div class="action" id="action-deny" hidden>
+      <span class="action-verdict refuse">Tool not allowed</span>
+      <code class="action-tool" id="deny-tool"></code>
+      <button id="run-deny" type="button" class="secondary">Run</button>
+    </div>
+
     <p id="status" class="status" role="status" aria-live="polite">Not run yet.</p>
   </section>
 
