@@ -475,7 +475,7 @@ networks that re-sign TLS. See `certs/`.
 | `invalid_client` | Step 1: the service client's id or secret. Steps 2 and 3: the agent's key does not match the one registered on the agent |
 | `tool not found` on every call | Either `allow_connect_without_caller` is false, or you restarted instead of `down -v` |
 | The server rejects a token the plugin clearly minted | `auth_type` is not `none`, so Bifrost overwrote the plugin's `Authorization` header |
-| A refusal naming a scope the call never asked for | The verdict-cache defect. Confirm `agent_status_ttl` is `1ms` |
+| A refusal naming a scope the call never asked for | This was a verdict-cache key collision, fixed in `Binding.verdictKey()`. If you see it, you are on a plugin build predating that fix |
 | Plugin does not load, no obvious error | Go version, `bifrost/core` version, or architecture mismatch. Run `make compat` |
 | `no caller identity token` | No `Authorization: Bearer` reached the gateway |
 | `wrong audience` from the server | You validated against the authorization server's `audiences` field rather than the resource URL. `aud` comes from the `resource` parameter on the exchange |
@@ -486,30 +486,45 @@ accidentally accept, and an over-broad ask is a clean, legible failure.
 
 ---
 
-## Known defect: the verdict cache
+## The verdict cache, and what `agent_status_ttl` really controls
 
-**Read this before raising `agent_status_ttl`.** The shipped config sets it to `1ms`, and that
-value is load-bearing.
+The plugin caches Okta's answer so repeated identical questions do not each cost a round trip.
+`agent_status_ttl` bounds how long an answer is reused. It ships at `10s`.
 
-The plugin's verdict cache has an **unresolved bug**. A cached denial could be served to a
-*different* binding on the same authorization server. In this demo both bindings point at the
-same authorization server, so the concrete failure is a `get_telemetry` call being refused and
-told it may not have `task.dispatch`, a scope that call never requested. The error message
-actively misleads whoever is debugging it.
+### A fixed bug worth knowing about
 
-**The mitigation is `agent_status_ttl: "1ms"`.** At that value the cache never serves a stale
-answer, so every tool call re-asks Okta.
+The cache key was originally the authorization server id alone. Both bindings in this demo sit
+on the **same** authorization server, so they shared a verdict: a denial recorded for
+`fleetops_command` was reported for `fleetops_read`, telling a `get_telemetry` call it may not
+have `task.dispatch`, a scope it never requested. Misleading rather than unsafe, but it sends
+whoever is debugging it to the wrong place.
 
-Be precise about what that means:
+**Fixed at the root**, in `Binding.verdictKey()` in the plugin repo. The key is now the
+authorization server id plus the target resource URL plus the **sorted** scope set, NUL-joined.
+Two tests cover it in both directions and both were mutation-tested, so reverting the key makes
+them fail. The caching path is verified at the live `10s` TTL, not only with caching disabled:
+an interleaved six-call sequence across both bindings is order-independent and correct every
+time.
 
-- The current configuration is correct **because the cache is effectively disabled**, not
-  because the caching path has been proven right.
-- **Raising the TTL re-introduces the risk** until the root cause is found and fixed.
-- The cost is **one Okta round trip per tool call**. That is today's performance
-  characteristic, and it is a deliberate trade rather than an oversight.
+### The honest caveat on `10s`
 
-If you are here because per-call latency matters, the fix is to resolve the caching bug, not to
-raise the TTL.
+`10s` is a **demo default, not a tuned production value**, and the number does two jobs at
+once. It is the cache lifetime, and therefore also the **revocation staleness bound**.
+
+**Raising it widens the window in which a deactivated agent still passes.** That is the real
+tradeoff. It is not a free performance dial, so choose it against how fast a deactivation needs
+to bite in your environment.
+
+### What actually costs a round trip
+
+Easy to attribute to the wrong mechanism, so worth separating.
+
+| | Frequency | Why |
+|---|---|---|
+| The **authorization check** | at most once per `10s` per distinct question | cached, keyed on the exact binding |
+| The **mint** | two token requests per call | Bifrost connections are per-call, so the connect-time mint runs per call. Unrelated to the TTL |
+
+The per-call cost comes from Bifrost's per-call connection model, not from the cache setting.
 
 ## Deliberately not here
 
@@ -518,20 +533,36 @@ raise the TTL.
   layer above this one.
 - **No DPoP.** Tokens are bearer tokens.
 - **No production claims.** Fleet state is in memory and resets with the container.
-- **No revocation signals.** Revocation is caught by asking. With `agent_status_ttl` at `1ms`
-  that is every call. The plugin exposes `InvalidateVerdicts()` as the seam for an event hook
-  or shared-signals receiver. Nothing calls it yet.
+- **No revocation signals.** Revocation is caught by asking, within `agent_status_ttl`, so at
+  the shipped `10s` a deactivation can take up to ten seconds to bite. The plugin exposes
+  `InvalidateVerdicts()` as the seam for an event hook or shared-signals receiver, which would
+  close that window. Nothing calls it yet.
 
 ## Two other ways to run this
 
 Both exist, both are useful, both are secondary to the gateway path above.
 
-**`driver/`, the exchange with no gateway in the way.** `make demo-read`,
-`make demo-command`, `make demo-deny`. It calls the plugin's **own** exchange code rather
-than reimplementing it, so a passing run is direct evidence about the code that ships. Start
-here when something is misconfigured: you see Okta's own answer rather than a gateway's
-interpretation of it. Note the driver's scope names are compiled in as `fleet.*`; if your
-tenant publishes different names, edit `driver/main.go` or pass `-scopes`.
+**`driver/`, the exchange with no gateway in the way.** It calls the plugin's **own** exchange
+code rather than reimplementing it, so a passing run is direct evidence about the code that
+ships. It reads the same `FLEETOPS_SCOPE_*` variables as the server and targets the same
+authorization server and resource as the gateway config, so it cannot drift from what Bifrost
+does.
+
+Start here when something is misconfigured. You see Okta's own answer rather than a gateway's
+interpretation of it.
+
+```bash
+make demo          # both outcomes, and it completes rather than erroring out
+```
+
+```
+lane read     ISSUED    chain 0oa135... <- wlp135...   scopes task.read agent.invoke
+lane command  REFUSED   invalid_scope [task.dispatch]
+```
+
+`make demo-command` is a **refusal by design**, not a broken target. The connection does not
+grant dispatch, so Okta declines, which is the same point the gateway path makes.
+`make demo-deny` asks the read lane for an ungranted scope explicitly.
 
 **`sentinel/`, the agent-to-agent chain of custody as a web page.** Decodes and displays
 both the intermediate assertion and the final access token side by side, including

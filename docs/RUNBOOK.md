@@ -151,18 +151,16 @@ object Okta shows you. If you miss it, generate a new key pair rather than tryin
 the old one. Only the Acting Agent's key is needed by this demo, since the Target never
 authenticates here.
 
-> **Save it under both filenames.** The two run paths currently disagree, and this will stop
-> you at `make config` otherwise. It is a pending cleanup, not a design decision.
->
-> ```bash
-> cp /path/to/downloaded.jwk secrets/sentinel-intake-key.jwk   # the gateway path
-> cp /path/to/downloaded.jwk secrets/agent-key.jwk             # the driver path
-> chmod 600 secrets/*.jwk
-> ```
->
-> `bifrost/config.template.json` names `sentinel-intake-key.jwk`, and
-> `scripts/render-config.sh` refuses to render without it. The `make demo-*` driver targets
-> pass `agent-key.jwk`. `secrets/` is gitignored apart from its README.
+Save it as `secrets/sentinel-intake-key.jwk`. That is the one canonical name, used by
+`bifrost/config.template.json`, by `scripts/render-config.sh`, and by the `make demo-*` targets
+through the Makefile's `AGENT_KEY_FILE` variable.
+
+```bash
+cp /path/to/downloaded.jwk secrets/sentinel-intake-key.jwk
+chmod 600 secrets/sentinel-intake-key.jwk
+```
+
+`secrets/` is gitignored apart from its README.
 
 If you register a JWK over the API instead, it **must carry `use: "sig"`** or it 400s with
 "Key 'use' must be 'sig'".
@@ -336,10 +334,23 @@ Start with the driver. It exercises the exchange with nothing else in the way, s
 misconfiguration shows you Okta's own answer rather than a gateway's interpretation of it.
 
 ```bash
-make demo-read
-make demo-command
-make demo-deny        # asks for a scope that must be refused
+make demo             # both outcomes in one run
 ```
+
+```
+lane read     ISSUED    chain 0oa135... <- wlp135...   scopes task.read agent.invoke
+lane command  REFUSED   invalid_scope [task.dispatch]
+```
+
+The driver reads the same `FLEETOPS_SCOPE_*` variables as the MCP server, and targets the same
+authorization server and resource as the gateway config, so it cannot drift from what Bifrost
+does. Individual targets:
+
+| Target | Expected outcome |
+|---|---|
+| `make demo-read` | **ISSUED.** A token naming the Caller Service and the Acting Agent |
+| `make demo-command` | **REFUSED.** The connection does not grant dispatch. This is correct, not a broken target |
+| `make demo-deny` | **REFUSED.** Asks the read lane for an ungranted scope explicitly |
 
 On a success, the line worth reading is the delegation chain: the Caller Service as subject,
 the Acting Agent as actor. If the actor is absent, the `act` claim did not come back and the
@@ -348,11 +359,6 @@ central claim of the demo is not being made. Stop and fix that before going furt
 > `act`, and the `sub_profile` that types each party as `service` or `ai_agent`, are **not in
 > Okta's published developer documentation.** Both were verified empirically by decoding real
 > tokens from this tenant. Present them that way: verified, not documented.
-
-> **The driver's scope names are compiled in as `fleet.*`**, from the agent-to-API variant.
-> If your tenant publishes `task.read` and `task.dispatch`, pass `-scopes` or edit
-> `driver/main.go`. Left alone against a `task.*` tenant it fails with `invalid_scope`, which
-> is correct behaviour reporting the wrong thing.
 
 ### Then through the gateway
 
@@ -392,10 +398,12 @@ nothing changes in the tenant between them.
 Deactivating an agent is caught by the plugin's per-call check, because Okta stops issuing and
 the plugin asks Okta again on every call. `make revoke` prints the console path.
 
-`agent_status_ttl` bounds how stale that answer can be. The shipped config sets it to `1ms`,
-which means there is effectively no caching and every call re-asks. **Do not raise it without
-reading the verdict-cache defect in the main README.** The low value is also working around an
-unresolved caching bug, not only tightening revocation.
+`agent_status_ttl` bounds how stale that answer can be. It ships at `10s`, so a deactivation
+can take up to ten seconds to bite.
+
+That number is a demo default, not a tuned production value, and it does two jobs at once: it
+is the cache lifetime **and** the revocation staleness bound. **Raising it widens the window in
+which a deactivated agent still passes.** See the main README before changing it.
 
 That is the architectural reason the per-call check exists, and it is what the code does. It
 is worth stating separately from the scope refusal above, which is the pair actually proven
@@ -422,7 +430,7 @@ switch.
 | `INVALID_FORMAT` on `authorizationServerOrn` | Also step 4. The ORN is fine; the registration is missing |
 | `E0000001` on activation | The agent has no owner |
 | `E0000021` on a connection PATCH | Wrong content type. It must be `application/merge-patch+json` |
-| `missing secrets/sentinel-intake-key.jwk` from `make config` | The key is saved only as `agent-key.jwk`. Save it under both names, step 3 |
+| `missing secrets/sentinel-intake-key.jwk` from `make config` | The agent key is not at the canonical path. See step 3 |
 | Plugin does not load, no obvious error | Go version, `bifrost/core` version, or architecture mismatch on the `.so`. Run `make compat` in the plugin repo against the exact image you are loading into |
 | Every call returns `tool not found` | Either `allow_connect_without_caller` is false, or you restarted instead of `down -v` |
 | `no caller identity token` | No `Authorization: Bearer` reached the gateway |

@@ -9,7 +9,23 @@
 #   make up
 
 PLUGIN_DIR ?= ../okta-bifrost-plugin
-PLATFORM   ?= linux/amd64
+
+# PLATFORM must be derived from the host, not hardcoded, because scripts/render-config.sh
+# independently derives the plugin filename from `uname -m`. Hardcoding one side lets the
+# two disagree, and the failure is nastier than a mismatch usually is:
+#
+#   on a clean checkout, `make up` builds okta-agent-identity-amd64.so while the rendered
+#   config tells Bifrost to load -arm64.so, so the plugin fails to load;
+#
+#   on a machine where an arm64 .so already exists, it SUCCEEDS while being wrong. The
+#   amd64 artifact nobody loads is rebuilt, Bifrost loads the stale arm64 file already on
+#   disk, and a plugin source change appears to have been applied when it has not. That is
+#   the "the file has the symbol but the running process does not" trap, automated.
+#
+# It also costs real time when wrong: the driver under emulation measured 39.6s against
+# 9.3s native for the same run, which is thirty seconds of dead air on the fallback path.
+PLATFORM   ?= linux/$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
 COMPOSE    ?= docker compose
 
 .DEFAULT_GOAL := help
