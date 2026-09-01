@@ -693,9 +693,9 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
 
    Set on the tab container rather than on the panel so that it reaches every descendant by
    inheritance, including a paragraph that is not inside a panel. Note that .hint is 14px, so
-   it lands at the same 62 CHARACTERS as body prose while being narrower in pixels, which is
+   it lands at the same CHARACTER COUNT as body prose while being narrower in pixels, which is
    the point of measuring in ch rather than in px. */
-#tab-about, #tab-plugin, #tab-logs { --measure: 62ch; }
+#tab-about, #tab-plugin, #tab-logs { --measure: 88ch; }
 
 #tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: var(--measure); }
 #tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: var(--measure); }
@@ -727,32 +727,40 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    The demo tab appears in none of these selectors. Its flow diagram is the demonstration and
    is the one thing on this page that has earned all 1240px. */
 
-/* Wide tier, and the default for any explainer panel the prose rule below does not claim.
-   940px leaves 896px inside the card, which is what the two demanding kinds of content need:
-   a three column table keeps roughly 38 characters per cell, and the longest sample log line,
-   87 monospace characters, still sits on one line without scrolling. */
-#tab-about .panel,
-#tab-plugin .panel,
-#tab-logs .panel {
-  max-width: 940px;
-  margin-inline: auto;
-}
+/* CARDS STAY FULL WIDTH, matching the demo tab and everything else on the page.
 
-/* Prose tier. Measure, plus both of the panel's paddings, plus both of its borders, so the
-   card wraps the text exactly. The padding is a little roomier than .panel's own 1.3rem,
-   because a card with nothing in it but prose can afford the breathing room and it narrows
-   the step between the two tiers.
+   An earlier version of this file shrank these cards to fit their prose, so the empty space
+   became symmetric page margin. That is defensible typography and it was the wrong call
+   here: it made three of the four tabs a different width from the fourth, and a box that
+   stops short of the page looks like a box that failed to load rather than like a decision.
+   Consistent edges win.
 
-   :not(:has()) is progressive enhancement and it fails in the safe direction: where :has() is
-   unsupported the whole rule is dropped and these panels keep the 940px above, which is still
-   far tighter than the 1240px they had. The 62ch inside var() is a fallback for the same
-   reason, so a missing --measure can never resolve to max-width: none and send a card back to
-   full width. */
-#tab-about .panel:not(:has(table.facts, pre.log)),
-#tab-plugin .panel:not(:has(table.facts, pre.log)),
-#tab-logs .panel:not(:has(table.facts, pre.log)) {
-  max-width: calc(var(--measure, 62ch) + 3.2rem + 2px);
-  padding-inline: 1.6rem;
+   So the dead space is solved from the other side instead. The cards fill the width and the
+   CONTENT is what changes: prose gets a wider measure, and multi-paragraph runs go into
+   columns rather than leaving a third of the card empty. */
+
+/* Prose measure, raised from the 62ch a book would use. At this card width 62ch filled about
+   half the box. 88ch is still inside the range that reads comfortably, and it leaves far less
+   of the card empty. Tables and log blocks are unaffected: they set their own width below. */
+
+/* Panels holding nothing but prose put their paragraphs into two columns on a wide screen.
+   This is what actually uses the width, rather than stretching a single line of text past
+   the point where the eye can find the start of the next one.
+
+   :has() is progressive enhancement here and fails safe: where it is unsupported the rule is
+   dropped and these panels are simply single column at the wider measure, which is still a
+   large improvement on the original. */
+@media (min-width: 1100px) {
+  #tab-about .panel:not(:has(table.facts, pre.log, .actions-inline)),
+  #tab-plugin .panel:not(:has(table.facts, pre.log, .actions-inline)),
+  #tab-logs .panel:not(:has(table.facts, pre.log, .actions-inline)) {
+    columns: 2;
+    column-gap: 2.4rem;
+  }
+  /* A heading must not sit at the bottom of the first column with its text in the second,
+     and a paragraph should not be split across the gap where it can be avoided. */
+  #tab-about .panel h2, #tab-plugin .panel h2, #tab-logs .panel h2 { column-span: all; }
+  #tab-about .panel p, #tab-plugin .panel p, #tab-logs .panel p { break-inside: avoid; }
 }
 
 /* --------------------------------------------------------------- explanatory tables */
