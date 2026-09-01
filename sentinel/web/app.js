@@ -1334,6 +1334,10 @@ function renderPathChooser() {
     const button = el('button', {
       type: 'button',
       class: 'path-button' + (selected ? ' selected' : ''),
+      // Lets CSS address one specific demonstration, which is how the no-gateway path is
+      // hidden for a customer who asked to see the gateway. Purely an attribute: it
+      // changes no behaviour, and the path stays fully runnable via the API.
+      'data-path': id,
       'aria-pressed': selected ? 'true' : 'false',
       disabled: p.available ? null : 'disabled',
       title: p.available ? p.summary : p.unavailable,

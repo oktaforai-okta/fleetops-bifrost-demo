@@ -454,3 +454,18 @@ details.reference > summary {
 }
 details.reference > summary:hover { color: var(--fg, #1a1d23); }
 details.reference[open] > summary { margin-bottom: 0.6rem; }
+
+/* GATEWAY-ONLY PRESENTATION.
+   The customer this was built for runs Bifrost and asked to see the gateway. Offering
+   "Direct to Okta, no gateway" as an equal choice beside it invites the opposite question,
+   "so why do I need the gateway", which is not the conversation to start on their own
+   screen. So the no-gateway demonstration is hidden here.
+
+   It is NOT removed. It still runs, and is still the right thing to reach for when you want
+   the delegated token decoded in the browser rather than the resource server's account of
+   it, or as a fallback if the gateway is unavailable:
+
+       POST /api/run?path=okta&mode=grant     and    ?path=okta&mode=deny
+
+   To show it in the UI again, delete this one rule. */
+.path-button[data-path="okta"] { display: none; }
