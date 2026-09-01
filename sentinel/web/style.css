@@ -688,13 +688,72 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
   font-size: 1.02rem;
   letter-spacing: -0.01em;
 }
-#tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: 62ch; }
-#tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: 62ch; }
+/* The prose measure, written down once. The card widths further down are derived from it,
+   so the two cannot drift apart: widen the measure and the prose cards follow.
+
+   Set on the tab container rather than on the panel so that it reaches every descendant by
+   inheritance, including a paragraph that is not inside a panel. Note that .hint is 14px, so
+   it lands at the same 62 CHARACTERS as body prose while being narrower in pixels, which is
+   the point of measuring in ch rather than in px. */
+#tab-about, #tab-plugin, #tab-logs { --measure: 62ch; }
+
+#tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: var(--measure); }
+#tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: var(--measure); }
 #tab-about li, #tab-plugin li, #tab-logs li { margin: 0.25rem 0; }
 
 /* Neither of these tabs sits above the fold, so their monospace output can afford the extra
    size. Appearance is left to pre.log below, which owns every block in these two tabs. */
 #tab-plugin pre, #tab-logs pre { font-size: 0.88rem; }
+
+/* --------------------------------------------------- explainer card width and margin */
+
+/* THE DEAD SPACE THIS FIXES. These panels used to stretch to main's full 1240px while the
+   prose inside them stopped at the measure above, so a card could be a third empty down its
+   right hand side with the text pinned to the left edge. On a projector that reads as
+   unfinished, and it wastes the part of the screen the customer is actually looking at.
+
+   The fix is NOT to let the prose stretch. Long measure is harder to read and 62ch is right.
+   It is to size the CARD to what is in it and centre it, so the leftover becomes symmetric
+   page margin. The same empty pixels then read as a decision rather than as an unfilled box.
+
+   Two widths, because the content is not one kind of thing:
+
+     prose  a panel holding paragraphs, a list and links, and nothing else. The card is the
+            measure plus its own padding, so there is no gap left inside it at all.
+     wide   a panel holding a table.facts or a pre.log. A three column comparison table and a
+            block of verbatim JSON both need more room than any line of prose should ever
+            have, so these keep a card sized for them instead.
+
+   The demo tab appears in none of these selectors. Its flow diagram is the demonstration and
+   is the one thing on this page that has earned all 1240px. */
+
+/* Wide tier, and the default for any explainer panel the prose rule below does not claim.
+   940px leaves 896px inside the card, which is what the two demanding kinds of content need:
+   a three column table keeps roughly 38 characters per cell, and the longest sample log line,
+   87 monospace characters, still sits on one line without scrolling. */
+#tab-about .panel,
+#tab-plugin .panel,
+#tab-logs .panel {
+  max-width: 940px;
+  margin-inline: auto;
+}
+
+/* Prose tier. Measure, plus both of the panel's paddings, plus both of its borders, so the
+   card wraps the text exactly. The padding is a little roomier than .panel's own 1.3rem,
+   because a card with nothing in it but prose can afford the breathing room and it narrows
+   the step between the two tiers.
+
+   :not(:has()) is progressive enhancement and it fails in the safe direction: where :has() is
+   unsupported the whole rule is dropped and these panels keep the 940px above, which is still
+   far tighter than the 1240px they had. The 62ch inside var() is a fallback for the same
+   reason, so a missing --measure can never resolve to max-width: none and send a card back to
+   full width. */
+#tab-about .panel:not(:has(table.facts, pre.log)),
+#tab-plugin .panel:not(:has(table.facts, pre.log)),
+#tab-logs .panel:not(:has(table.facts, pre.log)) {
+  max-width: calc(var(--measure, 62ch) + 3.2rem + 2px);
+  padding-inline: 1.6rem;
+}
 
 /* --------------------------------------------------------------- explanatory tables */
 
@@ -847,6 +906,70 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
    status. Forcing a full-width basis puts it on its own line underneath. */
 .controls > #status { flex-basis: 100%; margin-top: .1rem; }
 
+/* The rows must line up with the path chooser above them. .controls and .paths-section
+   already share the same content box: both sit inside main's 1240px and neither adds
+   horizontal padding, so the misalignment was never a container mismatch. The rows were
+   plain flex items sizing to their own content, which stopped short of the right edge.
+   Basis is half the row less half the .85rem gap, so the two are equal and together span
+   the full width, flush with the box above. Grow and shrink stay at 1 so a long tool name
+   wraps inside its own row rather than pushing the pair wider than the box. */
+.controls > .action {
+  flex: 1 1 calc(50% - .425rem);
+  min-width: 0;
+  /* The row gap on .controls already separates the two, across and down, so the row's own
+     bottom margin only added a second and unequal gap once they stacked. */
+  margin-bottom: 0;
+  /* Equal height, so the pair reads as a pair even when one row wraps and the other does
+     not. Their contents stay vertically centred: that is .action's own align-items. */
+  align-self: stretch;
+}
+
+/* Below this the pair cannot hold two readable rows side by side, so each takes the full
+   width and they stack. Nothing else about the rows changes. */
+@media (max-width: 700px) {
+  .controls > .action { flex-basis: 100%; }
+}
+
+/* app.js hides the whole refusal row when the API offers no refusal run, by setting the
+   hidden attribute. .action's own display: flex outranks the browser's [hidden] rule, so
+   the row stayed on screen carrying an empty tool name, and under the sizing above it
+   would also hold half the width of the pair. Restoring [hidden] fixes both. */
+.action[hidden] { display: none; }
+
+/* Both Run buttons get the same treatment. They do the same kind of thing, run this row, so
+   an outlined one beside a filled one implied that the refusal run was the lesser of the two,
+   or the riskier. The row already says which outcome it is, in the verdict label's colour and
+   in its coloured left edge, so the button does not repeat it and is deliberately not tinted
+   per outcome: two coloured buttons would make the pair read as a traffic light.
+
+   Solid wins, because it is the treatment already on screen and it carries further on a
+   projector. White on #1b1b1b is the same contrast the outlined button had, the other way up.
+
+   Kept on the id rather than folded into .secondary: .secondary still means an outlined
+   button, there is simply no longer a secondary action in this row. transform is left to the
+   .secondary rules above, so the reduced-motion block keeps neutralising the press. Focus is
+   left to the shared :focus-visible rule, which is already offset outward to clear a dark
+   button. */
+#run-deny {
+  color: #ffffff;
+  background: #1b1b1b;
+  border: 1px solid #1b1b1b;
+  box-shadow: 0 1px 2px rgba(16, 18, 22, .18);
+}
+#run-deny:hover:not(:disabled) {
+  background: #333333;
+  border-color: #1b1b1b;
+  box-shadow: 0 2px 6px rgba(16, 18, 22, .22);
+}
+#run-deny:active:not(:disabled) {
+  background: #0d0d0d;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+/* The shared :disabled rule drops the shadow, but it is a class selector and the base above
+   is an id, so without this the deny button would keep its shadow while Run lost one during
+   a run. Opacity and cursor come from that shared rule and need no restating. */
+#run-deny:disabled { box-shadow: none; }
+
 /* Repo links read as links, not as inert code. The demo is meant to be taken away and
    run, so these are a real part of the pitch rather than decoration. */
 #tab-plugin a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -866,3 +989,43 @@ pre.log .jhi  {                                          /* the fields worth poi
   border-radius: 3px;
   padding: 0 2px;
 }
+
+/* Links to the gateway's own console and raw API. Deliberately quieter than the Run
+   buttons: opening someone else's admin UI is a supporting action, not the point of the
+   page. Outlined rather than solid, which also keeps the two treatments distinct now that
+   both Run buttons are solid. */
+.actions-inline {
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin: .6rem 0 .2rem;
+}
+.linkbutton {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-weight: 600;
+  font-size: .9rem;
+  padding: .45rem .85rem;
+  border: 1px solid var(--rule, #d8dbe0);
+  border-radius: var(--radius-sm, 6px);
+  background: #fff;
+  color: inherit;
+  /* Beats the #tab-plugin a rule, which underlines anchors in this tab. A button that is
+     also underlined reads as a mistake. */
+  text-decoration: none;
+}
+.linkbutton:hover {
+  background: #f4f6f8;
+  border-color: #b9bfc7;
+}
+/* A CSS-drawn external-link cue rather than an icon font, so the page keeps its promise of
+   no network dependency. Marked aria-hidden by virtue of being generated content, which
+   assistive tech does not announce. */
+.linkbutton::after {
+  content: "\2197";
+  font-size: .85em;
+  opacity: .55;
+}
+#tab-plugin a.linkbutton { text-decoration: none; }
+#tab-plugin a.linkbutton:hover code { background: none; }

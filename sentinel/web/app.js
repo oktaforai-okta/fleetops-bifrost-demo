@@ -1159,7 +1159,7 @@ function parseEvent(raw) {
 }
 
 // Every button that starts a run, so they can be disabled together while one is in flight.
-const RUN_BUTTONS = ['run', 'rerun', 'run-deny'];
+const RUN_BUTTONS = ['run', 'run-deny'];
 
 function setRunButtons(disabled) {
   for (const id of RUN_BUTTONS) {
@@ -1181,7 +1181,6 @@ async function run(mode) {
   state.profiles = {};
 
   setRunButtons(true);
-  document.getElementById('rerun').hidden = true;
   clear(document.getElementById('verdict'));
   setStatus(state.mode === 'deny'
     ? 'Running, asking for a scope the connection is not expected to grant…'
@@ -1251,8 +1250,6 @@ function handleEvent({ event, data }) {
   if (event === 'done') {
     setStatus(data.outcome || 'Finished.', data.ok ? 'good' : 'bad');
     renderVerdict(data);
-    document.getElementById('run').hidden = true;
-    document.getElementById('rerun').hidden = false;
 
     // Open the hop that decided the run, not simply the last one. On a failure the last
     // step is "not attempted", whose panel explains nothing; the first step that was
@@ -1304,7 +1301,6 @@ async function start() {
   // Wired once. setUpDenyButton runs again on every path switch and only relabels, so
   // attaching there would stack a listener per switch.
   document.getElementById('run').addEventListener('click', () => run('grant'));
-  document.getElementById('rerun').addEventListener('click', () => run('grant'));
   document.getElementById('run-deny').addEventListener('click', () => run('deny'));
 }
 
@@ -1362,7 +1358,6 @@ function selectPath(id) {
 
   clear(document.getElementById('verdict'));
   document.getElementById('run').hidden = false;
-  document.getElementById('rerun').hidden = true;
 
   renderPathChooser();
   labelRunButton();
@@ -1380,7 +1375,6 @@ function selectPath(id) {
 // than from this file.
 function labelRunButton() {
   document.getElementById('run').textContent = 'Run';
-  document.getElementById('rerun').textContent = 'Run again';
 
   const grant = activePath().grant || {};
   const target = grant.tool || (grant.scopes || []).join(' ');

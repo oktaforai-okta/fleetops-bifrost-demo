@@ -151,14 +151,58 @@
       modified and not forked. The plugin is what makes the gateway ask Okta.
     </p>
     <p class="hint">
-      Open source, reusable by any Bifrost customer:
-      <a href="https://github.com/oktaforai-okta/okta-bifrost-plugin"
-         target="_blank" rel="noopener noreferrer"><code>oktaforai-okta/okta-bifrost-plugin</code></a>
+      Open source, and reusable by any Bifrost customer.
     </p>
+    <!-- Buttons rather than inline code links. At the reading width these panels now use, a
+         full repo path wrapped mid-token as "oktaforai-okta/okta-bifrost-" then "plugin",
+         which reads as a rendering fault rather than as a link. A short label cannot break. -->
+    <p class="actions-inline">
+      <a class="linkbutton" href="https://github.com/oktaforai-okta/okta-bifrost-plugin"
+         target="_blank" rel="noopener noreferrer">The plugin, on GitHub</a>
+      <a class="linkbutton" href="https://github.com/oktaforai-okta/fleetops-bifrost-demo"
+         target="_blank" rel="noopener noreferrer">This demo, including the Okta runbook</a>
+    </p>
+  </section>
+
+  <!-- Deliberately short. This is a jumping-off point, not a chapter: three ways to look at
+       the gateway directly, one line each saying what each is good for. The reasoning that
+       used to sit here in four paragraphs is in docs/PROVING-IT.md, which is where someone
+       who wants it will actually read it. -->
+  <section class="panel">
+    <h2>See it in Bifrost itself</h2>
+    <p>
+      Three ways to look at the gateway directly. None of them is this page.
+    </p>
+
+    <table class="facts">
+      <tbody>
+        <tr>
+          <td>
+            <a class="linkbutton" id="bifrost-ui-link"
+               href="http://localhost:8080/ui" target="_blank" rel="noopener noreferrer">Bifrost
+              console</a>
+          </td>
+          <td>The gateway&rsquo;s own admin UI.</td>
+        </tr>
+        <tr>
+          <td>
+            <a class="linkbutton" id="bifrost-api-link"
+               href="http://localhost:8080/api/mcp/clients" target="_blank"
+               rel="noopener noreferrer">Registered clients</a>
+          </td>
+          <td>Raw JSON: both MCP clients and the tools each serves.</td>
+        </tr>
+        <tr>
+          <td><code>./scripts/watch-gateway.sh</code></td>
+          <td><strong>The decisions.</strong> One line per tool call, and a refusal in the
+              plugin&rsquo;s own words. This is the one to have open while you demo.</td>
+        </tr>
+      </tbody>
+    </table>
+
     <p class="hint">
-      The demo you are looking at, including its Okta setup runbook:
-      <a href="https://github.com/oktaforai-okta/fleetops-bifrost-demo"
-         target="_blank" rel="noopener noreferrer"><code>oktaforai-okta/fleetops-bifrost-demo</code></a>
+      The first two live on the gateway, so they resolve only where it is reachable, which
+      running locally means <code>localhost:8080</code>.
     </p>
   </section>
 
@@ -414,7 +458,6 @@ tool handler error   tool="fleetops_command-dispatch_vehicle"
       <span class="action-verdict allow">Tool allowed</span>
       <code class="action-tool" id="grant-tool"></code>
       <button id="run" type="button" class="primary">Run</button>
-      <button id="rerun" type="button" class="primary" hidden>Run again</button>
     </div>
 
     <div class="action" id="action-deny" hidden>

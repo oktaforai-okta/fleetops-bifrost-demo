@@ -13,9 +13,16 @@
 # -extldflags '-static', and this does not.
 
 ARG GO_IMAGE=golang:1.27.0-alpine3.24
+# Their own Dockerfile builds the console on node:25-alpine3.23. Keep this in step with
+# it: the UI is their source and their lockfile, so their toolchain is the tested one.
+ARG NODE_IMAGE=node:25-alpine3.23
 ARG RUNTIME_IMAGE=alpine:3.23
 
-FROM ${GO_IMAGE} AS builder
+# --- source ----------------------------------------------------------------------------
+# One clone, shared by the UI stage and the Go stage. Cloning once rather than in each
+# stage keeps the two from ever being built from different commits, which would produce a
+# console and a server that disagree about the admin API.
+FROM ${GO_IMAGE} AS source
 
 # Which Bifrost to build. Pin this: the plugin must be compiled against the same
 # bifrost/core version this transports tag depends on, or it will not load. Check with
@@ -36,14 +43,59 @@ RUN if [ -f /tmp/certs/ca-bundle.crt ]; then \
 WORKDIR /src
 RUN git clone --depth 1 --branch "${BIFROST_REF}" https://github.com/maximhq/bifrost.git .
 
+# --- ui-builder ------------------------------------------------------------------------
+# The admin console is embedded with `//go:embed all:ui`, so the directory must exist and
+# be non-empty at Go build time. This stage produces it the way their own Dockerfile does:
+# their lockfile, their build script, their output directory. Nothing here is ours.
+#
+# The Node toolchain never reaches the runtime image. Only the built assets do, and they
+# arrive inside the Go binary, so the cost of this stage is build time rather than image
+# size.
+FROM ${NODE_IMAGE} AS ui-builder
+WORKDIR /ui
+
+# Same TLS-interception case as the clone above, except npm reaches the registry through
+# Node's own trust store rather than the system one, so the bundle has to be handed to
+# Node directly. Set per-command rather than with ENV, because pointing
+# NODE_EXTRA_CA_CERTS at a file that does not exist makes Node warn on every invocation.
+COPY certs/ /tmp/certs/
+
+# package files first, so a source-only change does not re-run the install.
+COPY --from=source /src/ui/package.json /src/ui/package-lock.json ./
+# NODE_ENV is deliberately left alone: vite, typescript and tailwind are devDependencies,
+# and `npm ci` under NODE_ENV=production would skip them and fail the build below.
+RUN if [ -f /tmp/certs/ca-bundle.crt ]; then \
+      export NODE_EXTRA_CA_CERTS=/tmp/certs/ca-bundle.crt && \
+      echo "handed local CA bundle to node for the npm install" ; \
+    fi ; \
+    npm ci
+
+COPY --from=source /src/ui/ ./
+
+# build-enterprise is `vite build && tsc --noEmit`, which is the script their Dockerfile
+# runs. It skips their copy-build step, which would write into ../transports; the Go stage
+# below copies the output instead.
+#
+# Despite the name this is the open-source console: the build only turns on enterprise
+# features when ui/app/enterprise exists, and in the public repo it does not.
+RUN npm run build-enterprise
+
+# --- builder ---------------------------------------------------------------------------
+# FROM source, so the clone and the build trust store are inherited rather than repeated.
+FROM source AS builder
 WORKDIR /src/transports
 
-# The admin console is embedded with `//go:embed all:ui` and is produced by a separate
-# npm build. This demo is driven from a terminal and never opens the console, so a
-# placeholder satisfies the embed directive and keeps a whole Node toolchain out of the
-# build. If you want the console, build the UI as their Dockerfile does instead.
-RUN mkdir -p bifrost-http/ui && \
-    printf '<!doctype html><title>Bifrost admin console not built</title>\n' > bifrost-http/ui/index.html
+COPY --from=ui-builder /ui/out bifrost-http/ui
+
+# `//go:embed all:ui` is satisfied by ANY non-empty directory, including a stub, so a
+# broken UI build does not fail the Go build: it produces a server that boots and serves a
+# blank page. Assert the real thing is there instead. Vite emits an index.html that loads
+# a hashed bundle out of assets/, which a stub will not have.
+RUN test -s bifrost-http/ui/index.html \
+      && grep -q 'assets/' bifrost-http/ui/index.html \
+      && echo "OK: admin console is built and embedded" \
+      || (echo "ERROR: bifrost-http/ui is not a built console" && \
+          ls -la bifrost-http/ui && exit 1)
 
 ENV CGO_ENABLED=1 GOOS=linux GOWORK=off
 ARG VERSION=dynamic-local
