@@ -116,6 +116,28 @@
     </p>
   </section>
 
+  <section class="panel">
+    <h2>Two questions people ask</h2>
+
+    <h3>Why can the agent still see the tool it is not allowed to use?</h3>
+    <p>
+      Listing the tools is not gated; running them is. The agent can see that
+      <code>dispatch_vehicle</code> exists and still cannot execute it, which is what you see
+      when the refusal happens. Hiding it would not add any control, because a hidden tool
+      still has to be refused when someone calls it directly, and gating discovery would stop
+      the gateway from registering tools at all.
+    </p>
+
+    <h3>Is Okta really asked on every single call?</h3>
+    <p>
+      The gateway evaluates every call. It also remembers Okta&rsquo;s answer for a few
+      seconds, so two identical calls in quick succession may reuse the previous answer rather
+      than ask again over the network. That window is a setting, and it is the same setting
+      that decides how quickly switching an agent off takes effect. Shorter means faster to
+      bite and more traffic to Okta.
+    </p>
+  </section>
+
 </div>
 
 <div id="tab-demo" role="tabpanel" aria-labelledby="tab-btn-demo">
