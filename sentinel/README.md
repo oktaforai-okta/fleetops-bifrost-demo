@@ -156,10 +156,10 @@ three `SENTINEL_TASKING_*` values added.
 | `OKTA_SERVICE_CLIENT_SCOPE`   | no       | defaults to `agent.invoke`                                     |
 | `OKTA_AGENT_OWN_AS_ID`        | yes      | the AS protecting the **Intake** Agent as a resource; hop 1 happens here |
 | `OKTA_AGENT_ID`               | yes      | the Intake Agent's workload principal id                       |
-| `OKTA_AGENT_RESOURCE_URL`     | yes      | the Intake Agent's resource URL, e.g. `api://sentinel-intake`   |
+| `OKTA_AGENT_RESOURCE_URL`     | yes      | the Intake Agent's resource URL. Must be `https://`, e.g. `https://sentinel.atko.example/intake`. The console REJECTS `api://` and the value is immutable once saved   |
 | `OKTA_AGENT_PRIVATE_KEY_FILE` | yes      | the Intake Agent's private key as a JWK on disk                |
 | `SENTINEL_TASKING_AS_ID`      | yes      | the AS protecting the Tasking Agent                            |
-| `SENTINEL_TASKING_RESOURCE_URL` | yes    | sent as `resource`; becomes the final token's `aud`             |
+| `SENTINEL_TASKING_RESOURCE_URL` | yes    | sent as `resource`; the final token's `aud` is observed to equal it |
 | `SENTINEL_TASKING_SCOPES`     | yes      | space separated                                                |
 | `SENTINEL_WATCH_NAME` and the two siblings | no | display only                                       |
 | `SENTINEL_MASK_IDS`           | no       | `true` hides the tenant host and `wlp`/`aus`/`0oa` ids in reported endpoints. Claims are never masked. |

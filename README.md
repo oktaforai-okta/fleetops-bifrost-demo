@@ -206,10 +206,16 @@ The artifact lands at `bin/okta-agent-identity-<arch>.so`, with the architecture
 filename so two builds cannot be confused for each other. Compose mounts that whole `bin/`
 directory read-only, so a rebuild needs no change here.
 
-**From this repo you do not need to pass `PLATFORM` at all.** `make up` and `make plugin`
-derive it from the host, because `scripts/render-config.sh` independently derives the plugin
-filename from `uname -m` and the two must agree. The plugin repo's own Makefile still defaults
-to `linux/amd64`, so pass `PLATFORM` when you build from there directly.
+**From this repo you do not need to pass `PLATFORM` at all,** because everything runs on one
+host. `make up` and `make plugin` derive it from the host, which is right *here* only because
+`scripts/render-config.sh` independently derives the plugin filename from `uname -m`, so the two
+must agree locally.
+
+**Building from the plugin repo directly is different, and host-derivation would be wrong
+there.** The `.so` must match the architecture of the **Bifrost image you are loading into**,
+which is often not the machine you are building on: an arm64 Mac producing a plugin for amd64
+Linux needs `linux/amd64`. So set `PLATFORM` to the **target's** architecture. The plugin repo's
+`linux/amd64` default is deliberate and correct for that reason.
 
 **Do not "fix" the plugin repo to derive `PLATFORM` from the host as well.** The two repos want
 different answers and both are right. Here, the build and the rendered config both run on this
@@ -500,7 +506,7 @@ networks that re-sign TLS. See `certs/`.
 | A refusal naming a scope the call never asked for | This was a verdict-cache key collision, fixed in `Binding.verdictKey()`. If you see it, you are on a plugin build predating that fix |
 | Plugin does not load, no obvious error | Go version, `bifrost/core` version, or architecture mismatch. Run `make compat` |
 | `no caller identity token` | No `Authorization: Bearer` reached the gateway |
-| `wrong audience` from the server | You validated against the authorization server's `audiences` field rather than the resource URL. `aud` comes from the `resource` parameter on the exchange |
+| `wrong audience` from the server | `FLEETOPS_AUDIENCES` does not match the resource URL sent as `resource`. The issued `aud` is observed to equal that value, so validate against the resource URL rather than the authorization server's `audiences` field |
 
 **Okta does not down-scope.** A scope the connection does not grant fails the **whole**
 request rather than returning the grantable subset. There is no partial success to
