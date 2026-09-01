@@ -119,6 +119,7 @@ service that asked, and the agent that acted.
 | `secrets/` | The agent's private key JWK. Gitignored |
 | `docs/RUNBOOK.md` | The Okta setup, step by step |
 | `docs/HOW-IT-WORKS.md` | The non-developer explainer |
+| `docs/PROVING-IT.md` | How to show this is real, from Bifrost's log, the resource server's log, and Okta. Read this before demonstrating to anyone sceptical |
 
 The plugin lives in a **sibling repo**, because it is reusable and this demo is not. Clone
 both next to each other.
