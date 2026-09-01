@@ -48,8 +48,12 @@ type tokenView struct {
 }
 
 // describe builds the view for a token. It never returns the token.
-func describe(raw string) *tokenView {
-	v := &tokenView{Preview: preview(raw)}
+//
+// kind is a label only. Nothing about the decoding branches on it: both artefacts are
+// decoded by exactly the same path, and whatever claims are present are what gets
+// rendered. Assuming an assertion's shape would be the same mistake as assuming act.
+func describe(kind, raw string) *tokenView {
+	v := &tokenView{Kind: kind, Preview: preview(raw)}
 
 	claims, err := decodeClaims(raw)
 	if err != nil {

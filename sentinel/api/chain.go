@@ -20,6 +20,14 @@ const (
 	stepAccessToken = "access_token"
 )
 
+// The two artefact kinds. An ID-JAG is an assertion, not an access token, and is labelled
+// as such so an absent access-token claim on it is read as a difference in kind rather
+// than as a missing value.
+const (
+	kindAssertion   = "assertion (ID-JAG)"
+	kindAccessToken = "access token"
+)
+
 const (
 	labelWatchToken  = "Watch Service mints its own token"
 	labelIDJAG       = "Intake Agent exchanges that token for an ID-JAG"
@@ -121,7 +129,7 @@ func runChain(cfg *config, emit emitFunc) {
 	}
 
 	ev = hop1(stateIssued)
-	ev.Token = describe(subjectToken)
+	ev.Token = describe(kindAccessToken, subjectToken)
 	ev.Detail = "Check aud below: it should be the Intake Agent's resource URL."
 	emit(ev)
 
@@ -185,18 +193,24 @@ func runChain(cfg *config, emit emitFunc) {
 	// the reason this page exists, so the narrower signature would throw away the evidence.
 	result, err := client.Exchange(subjectToken, binding)
 	if err != nil {
-		// Which of the two calls failed is knowable, because the plugin wraps its errors
-		// with "id-jag exchange:" and "id-jag redemption:" respectively. Attributing the
-		// failure to the wrong call would misdirect whoever is debugging it.
-		//
-		// This is the one inference in the app that rests on the plugin's error WORDING
-		// rather than on its return values, so it is the one thing here that could rot
-		// silently if those strings change.
-		if strings.Contains(err.Error(), "id-jag redemption") {
+		// Never treat a non-nil result as success: the plugin documents that on error the
+		// result may be nil or partial. err is checked first, always.
+		if redemptionFailed(result, err) {
+			// The assertion succeeded and came back on the partial result, so this step is
+			// observed rather than inferred.
 			ev = idJAGEvent(stateIssued)
-			ev.Detail = "Inferred, not observed: redemption is only attempted once the " +
-				"exchange has succeeded. Exchange returns nothing on failure, so the " +
-				"assertion cannot be shown on this path."
+			if result != nil && result.IDJAG != "" {
+				ev.Token = describe(kindAssertion, result.IDJAG)
+				ev.Detail = "The exchange succeeded and its assertion is decoded below. " +
+					"Redemption of that assertion is what then failed, which is the next " +
+					"step. This is the distinction worth having: Okta DID assert this " +
+					"delegation, and the target authorization server would not honour it."
+			} else {
+				// Only reachable if a future Exchange reports a redemption failure without
+				// returning the assertion. Say what is known and no more.
+				ev.Detail = "The exchange succeeded, but this run did not receive the " +
+					"assertion, so there are no claims to show for it."
+			}
 			emit(ev)
 
 			ev = accessEvent(outcomeState(err))
@@ -206,6 +220,7 @@ func runChain(cfg *config, emit emitFunc) {
 			return
 		}
 
+		// Nothing was asserted, so there is no assertion to show and nothing to redeem.
 		ev = idJAGEvent(outcomeState(err))
 		ev.Error = failure(err, cfg)
 		ev.Detail = explainRefusal(err)
@@ -216,14 +231,15 @@ func runChain(cfg *config, emit emitFunc) {
 	}
 
 	ev = idJAGEvent(stateIssued)
-	ev.Token = describe(result.IDJAG)
+	ev.Token = describe(kindAssertion, result.IDJAG)
 	ev.Detail = "The assertion itself, decoded. This is where the delegation is asserted, " +
 		"so if an act claim appears anywhere in this chain it is most likely to be here. " +
-		"Whatever is below is what the assertion carries; nothing is added."
+		"Being an assertion rather than an access token, its claim set need not match the " +
+		"next step's. Whatever is below is what it carries; nothing is added."
 	emit(ev)
 
 	ev = accessEvent(stateIssued)
-	ev.Token = describe(result.AccessToken)
+	ev.Token = describe(kindAccessToken, result.AccessToken)
 	ev.Token.ExpiresIn = time.Until(result.ExpiresAt).Round(time.Second).String()
 	ev.Detail = "This is the token that would go upstream, and the only one of the two " +
 		"that leaves the gateway. Everything below is decoded from it; nothing is added."
@@ -302,6 +318,28 @@ func mintServiceToken(cfg *config) (string, error) {
 		}
 	}
 	return body.AccessToken, nil
+}
+
+// redemptionFailed reports which of hop 2's two calls failed.
+//
+// It leads with the RETURN VALUE, which is now load-bearing rather than advisory: Exchange
+// returns a partial result carrying the assertion when redemption fails, and a nil result
+// when the exchange itself failed, because in that case nothing was asserted. Those two
+// shapes answer the question outright.
+//
+// The error wording is kept only as a tiebreaker for the one shape the contract does not
+// describe, a non-nil result with no assertion on it. Reading the structure first means a
+// reworded error message can no longer silently misattribute a failure; at worst it costs
+// the tiebreaker, on a case that should not arise.
+func redemptionFailed(result *oktabifrost.ExchangeResult, err error) bool {
+	switch {
+	case result != nil && result.IDJAG != "":
+		return true
+	case result == nil:
+		return false
+	default:
+		return strings.Contains(err.Error(), "id-jag redemption")
+	}
 }
 
 // outcomeState decides whether an error represents a decision Okta made or a call that

@@ -463,7 +463,18 @@ const KEY_CLAIMS = ['sub', 'cid', 'uid', 'scp', 'aud', 'exp', 'jti', 'act'];
 function renderToken(tok) {
   const box = el('div', { class: 'token-box' });
 
-  box.appendChild(el('h5', { text: 'The token this step produced' }));
+  box.appendChild(el('h5', {
+    text: tok.kind ? 'What this step produced: ' + tok.kind : 'The token this step produced',
+  }));
+
+  // The two artefacts in hop 2 are not the same shape. Saying so stops the absent rows on
+  // the assertion from reading as a fault.
+  if (tok.kind && tok.kind.indexOf('assertion') === 0) {
+    box.appendChild(el('p', { class: 'hint', text:
+      'An assertion, not an access token, so it need not carry an access token’s ' +
+      'claims. Rows below reading "not on this token" are a difference in kind, not a ' +
+      'missing value.' }));
+  }
 
   if (!tok.is_jwt) {
     box.appendChild(el('p', { class: 'warn', text:
@@ -485,12 +496,20 @@ function renderToken(tok) {
     box.appendChild(el('p', { class: 'chain' },
       [el('code', { text: (tok.act_chain || []).join('  ←  ') })]));
   } else {
+    // Name only the identifying claims this artefact actually has. Citing cid on an
+    // assertion that carries none would be a small dishonesty of exactly the kind this
+    // paragraph exists to prevent.
+    const present = ['sub', 'cid', 'uid'].filter((k) => tok.claims[k] !== undefined);
+    const basis = present.length
+      ? 'inferred from ' + present.join(' and ') + ', not asserted by it'
+      : 'not supported by this artefact at all: it carries no sub, cid or uid to infer from';
+
     box.appendChild(el('p', { class: 'act-absent' }, [
-      el('strong', { text: 'No act claim on this token. ' }),
-      'The chain drawn above is inferred from sub and cid, not asserted by the token. ' +
-      'RFC 8693 act is what would carry the delegation chain; it is absent here, so ' +
-      'this token names its subject and its client, and nothing about who delegated to ' +
-      'whom.',
+      el('strong', { text: 'No act claim here. ' }),
+      'The chain drawn above is ' + basis + '. RFC 8693 act is what would carry the ' +
+      'delegation chain, and it is absent, so this names ' +
+      (present.length ? 'only ' + present.join(', ') : 'no principal') +
+      ' and nothing about who delegated to whom.',
     ]));
   }
 

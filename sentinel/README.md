@@ -36,6 +36,22 @@ that assertion is what actually asserts the delegation; the access token is only
 was redeemed for. So both are decoded and shown, and if an `act` claim exists anywhere in
 this flow, the assertion is the likelier place to find it.
 
+`Exchange` also returns the assertion **on a redemption failure**, as a partial result
+alongside the error. That is what lets this page separate the two failures that look alike
+and are not:
+
+- **the exchange failed** — Okta would not assert the delegation at all. No assertion comes
+  back, nothing is shown for it, and the redemption step is marked not attempted.
+- **redemption failed** — Okta *did* assert the delegation, and the target authorization
+  server refused to honour it. The assertion is decoded and shown, so you can read what was
+  asserted on your behalf before it was refused.
+
+Which of the two happened is read from the shape of the return value, not from the error
+text: a partial result carrying an assertion means redemption failed, a nil result means the
+exchange did. The `"id-jag exchange:"` / `"id-jag redemption:"` wrapping is kept only as a
+tiebreaker for a shape the contract does not describe, so rewording an error message cannot
+misattribute a failure.
+
 ## What it will not do
 
 The RFC 8693 `act` claim is what would carry a delegation chain. It is **not documented in
