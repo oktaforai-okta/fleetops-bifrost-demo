@@ -117,6 +117,34 @@ func loadConfig() (oktabifrost.Config, error) {
 		return v
 	}
 
+	// The two lanes deliberately share one authorization server and one target
+	// resource, and differ ONLY in the scopes they ask for. That is not a simplification
+	// of the topology, it IS the topology: the refusal this driver demonstrates comes
+	// from the agent's CONNECTION scope list, not from a boundary between two
+	// authorization servers. Splitting them across servers would prove something weaker,
+	// because a refusal could then be explained by addressing the wrong server.
+	//
+	// These must stay in lockstep with bifrost/config.template.json, which renders the
+	// gateway's bindings from the same variables and the same scope strings. If the two
+	// drift, the driver and the gateway demonstrate different things and the driver stops
+	// being a usable fallback, which is exactly the state this replaced: it asked for
+	// fleet.telemetry.read and friends, which this tenant does not publish at all, so
+	// every lane failed with invalid_scope for a reason unrelated to the point.
+	//
+	// OKTA_COMMAND_LANE_AS_ID and FLEETOPS_COMMAND_RESOURCE_URL name both lanes because
+	// both lanes address the same place. The names are historical, from when there were
+	// two servers. OKTA_READ_LANE_AS_ID and FLEETOPS_READ_RESOURCE_URL are no longer used
+	// by either the driver or the gateway.
+	targetAS := get("OKTA_COMMAND_LANE_AS_ID")
+	targetURL := get("FLEETOPS_COMMAND_RESOURCE_URL")
+
+	// Scope names are env-overridable, matching how the Fleet Ops server resolves them,
+	// so a tenant publishing different names needs no recompile. Defaults are what this
+	// tenant actually publishes.
+	readScope := envOr("FLEETOPS_SCOPE_TELEMETRY_READ", "task.read")
+	dispatchScope := envOr("FLEETOPS_SCOPE_DISPATCH", "task.dispatch")
+	invokeScope := envOr("OKTA_AGENT_INVOKE_SCOPE", "agent.invoke")
+
 	cfg := oktabifrost.Config{
 		OktaDomain:        get("OKTA_DOMAIN"),
 		AgentID:           get("OKTA_AGENT_ID"),
@@ -124,14 +152,14 @@ func loadConfig() (oktabifrost.Config, error) {
 		PrivateKeyJWKFile: get("OKTA_AGENT_PRIVATE_KEY_FILE"),
 		Bindings: map[string]oktabifrost.Binding{
 			"read": {
-				AuthorizationServerID: get("OKTA_READ_LANE_AS_ID"),
-				TargetResourceURL:     get("FLEETOPS_READ_RESOURCE_URL"),
-				Scopes:                []string{"fleet.telemetry.read", "fleet.routes.read"},
+				AuthorizationServerID: targetAS,
+				TargetResourceURL:     targetURL,
+				Scopes:                []string{invokeScope, readScope},
 			},
 			"command": {
-				AuthorizationServerID: get("OKTA_COMMAND_LANE_AS_ID"),
-				TargetResourceURL:     get("FLEETOPS_COMMAND_RESOURCE_URL"),
-				Scopes:                []string{"fleet.dispatch.command"},
+				AuthorizationServerID: targetAS,
+				TargetResourceURL:     targetURL,
+				Scopes:                []string{invokeScope, dispatchScope},
 			},
 		},
 	}

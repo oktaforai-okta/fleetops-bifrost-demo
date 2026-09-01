@@ -58,25 +58,46 @@ check: ## Build and vet the Fleet Ops server
 # plugin's own exchange code, so a passing run here is evidence the plugin's exchange
 # works, not a parallel implementation that might have drifted.
 
+# AGENT_KEY_FILE is the ONE canonical name for the agent's private key, and it matches
+# what bifrost/config.template.json and scripts/render-config.sh both require. It used to
+# differ here (agent-key.jwk), which worked only on a machine where both filenames
+# happened to exist, and stopped anyone following the runbook at `make config`.
+AGENT_KEY_FILE ?= secrets/sentinel-intake-key.jwk
+
+# DENY_SCOPE is the scope the deny run asks for and expects to be refused. It must be a
+# scope the tenant PUBLISHES but the agent's connection does NOT grant. A scope the tenant
+# does not publish at all also fails, but for the wrong reason, which makes the demo prove
+# nothing: that is what "fleet.dispatch.command" did here before.
+DENY_SCOPE ?= $(if $(FLEETOPS_SCOPE_DISPATCH),$(FLEETOPS_SCOPE_DISPATCH),task.dispatch)
+
 DRIVER = docker run --rm -v "$(HOME)/code":/w -w /w/fleetops-bifrost-demo/driver \
 	--platform $(PLATFORM) --env-file .env \
-	-e OKTA_AGENT_PRIVATE_KEY_FILE=/w/fleetops-bifrost-demo/secrets/agent-key.jwk \
+	-e OKTA_AGENT_PRIVATE_KEY_FILE=/w/fleetops-bifrost-demo/$(AGENT_KEY_FILE) \
 	golang:1.27 go run .
 
 .PHONY: demo
-demo: demo-read demo-command ## Run the happy path on both lanes
+demo: demo-read demo-command ## Both outcomes: read is issued, command is refused
 
 .PHONY: demo-read
 demo-read: ## Read lane: expect a token naming the caller and the agent
 	@$(DRIVER) -lane read
 
+# On the proven tenant this is REFUSED, and that is the correct outcome, not a broken
+# target. The agent's managed connection grants task.read and not task.dispatch, so the
+# command lane cannot be satisfied. It was previously described as expecting a token,
+# which made `make demo` fail and read as a broken demo rather than a working refusal.
+#
+# The exit code is swallowed so `make demo` can show both outcomes in one run. Okta's
+# refusal is printed in full by the driver either way, so nothing is hidden: if this
+# starts SUCCEEDING, that is the signal worth noticing, and it means someone granted
+# task.dispatch on the agent's connection.
 .PHONY: demo-command
-demo-command: ## Command lane: expect a token with the dispatch scope
-	@$(DRIVER) -lane command
+demo-command: ## Command lane: expect Okta to REFUSE, the connection does not grant dispatch
+	@$(DRIVER) -lane command || true
 
 .PHONY: demo-deny
-demo-deny: ## Ask the READ lane for a COMMAND scope. Expect Okta to refuse, by name
-	@$(DRIVER) -lane read -scopes "fleet.dispatch.command" || true
+demo-deny: ## Ask the read lane for a scope its connection does not grant. Expect Okta to refuse, by name
+	@$(DRIVER) -lane read -scopes "$(DENY_SCOPE)" || true
 
 .PHONY: revoke
 revoke: ## Print the console path for deactivating the agent, which is the demo's punchline

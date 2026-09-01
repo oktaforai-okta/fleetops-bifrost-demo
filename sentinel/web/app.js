@@ -6,10 +6,21 @@
  * built for nothing and deploy anywhere; the Go API lives on a different host.
  *
  * Second, and more important: this page renders the claims the API reports and nothing
- * else. In particular the RFC 8693 `act` claim, which is what would carry a delegation
- * chain, is not documented by Okta and has not been observed from this tenant. So when
- * it is absent the page says so, plainly, and shows what the token does carry instead.
- * A drawn chain that the token does not support would make the whole demo worthless.
+ * else.
+ *
+ * The RFC 8693 `act` claim is what carries the delegation chain. It IS observed from this
+ * tenant, on every successful exchange, along with a `sub_profile` at each level typing
+ * the party `service` or `ai_agent`. What it is not is documented: `act` and `sub_profile`
+ * appear in none of Okta's published developer pages, so both are verified empirically
+ * rather than contractually and could change without notice. Do not present them to a
+ * customer as documented behaviour.
+ *
+ * The discipline that follows is unchanged, and it is the reason the demo is worth
+ * anything. Every chain on screen is read out of a token actually received. When `act` is
+ * absent the page says so plainly and shows what the token does carry instead. When a
+ * level is folded away it says that too, and the raw nested claim stays on screen beside
+ * the rendering so the two can be compared. A drawn chain the token does not support
+ * would make the whole demo worthless.
  */
 
 'use strict';
@@ -395,12 +406,6 @@ function drawDiagram() {
       .attr('x1', cx).attr('y1', y + ASIDE_H)
       .attr('x2', cx).attr('y2', CENTRE_Y - NODE_H / 2);
 
-    g.append('text')
-      .attr('class', 'aside-link-label')
-      .attr('x', cx + 12)
-      .attr('y', (y + ASIDE_H + CENTRE_Y - NODE_H / 2) / 2 + 5)
-      .text('asked on every hop');
-
     g.append('rect')
       .attr('class', 'node-box')
       .attr('x', x).attr('y', y)
@@ -409,17 +414,24 @@ function drawDiagram() {
 
     g.append('text')
       .attr('class', 'node-role')
-      .attr('x', x + 16).attr('y', y + 26)
+      .attr('x', x + 16).attr('y', y + 24)
       .text(p.role.toUpperCase());
 
     g.append('text')
       .attr('class', 'node-name')
-      .attr('x', x + 16).attr('y', y + 56)
+      .attr('x', x + 16).attr('y', y + 52)
       .text(truncate(p.name, 22));
+
+    // Inside the box rather than on the connector. On the connector it sat in the same
+    // horizontal band as the hop captions and collided with one of them.
+    g.append('text')
+      .attr('class', 'aside-link-label')
+      .attr('x', x + 16).attr('y', y + 74)
+      .text('asked on every hop');
 
     g.append('text')
       .attr('class', 'node-state')
-      .attr('x', x + 16).attr('y', y + 84);
+      .attr('x', x + 16).attr('y', y + 94);
 
     g.append('title').text(p.name + ' — ' + p.role);
 
@@ -1282,6 +1294,7 @@ async function start() {
     : Object.keys(paths)[0] || 'okta';
 
   renderPathChooser();
+  labelRunButton();
   drawDiagram();
   renderSteps();
   renderDetail();
@@ -1348,11 +1361,20 @@ function selectPath(id) {
   document.getElementById('rerun').hidden = true;
 
   renderPathChooser();
+  labelRunButton();
   drawDiagram();
   renderSteps();
   renderDetail();
   setUpDenyButton();
   reportPathAvailability();
+}
+
+// labelRunButton names what pressing it will do, which differs by path: the gateway path
+// makes a tool call, the direct path runs the token exchange.
+function labelRunButton() {
+  const label = state.path === 'gateway' ? 'Call a tool through the gateway' : 'Run the exchange';
+  document.getElementById('run').textContent = label;
+  document.getElementById('rerun').textContent = label + ' again';
 }
 
 // reportPathAvailability says plainly when the selected demonstration cannot run. The

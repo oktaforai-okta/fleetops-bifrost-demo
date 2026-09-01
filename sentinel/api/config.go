@@ -474,7 +474,15 @@ func (c *config) gatewayView(unset func(string) string, tools []string, why stri
 					"urn:ietf:params:oauth:grant-type:token-exchange",
 					"urn:ietf:params:oauth:grant-type:jwt-bearer",
 				},
-				Scopes: c.taskingScopes,
+				// Deliberately no Scopes. Which scopes are requested for this hop is
+				// decided by Bifrost's own binding for the lane the tool belongs to, and
+				// this app does not hold that configuration. Reporting the direct path's
+				// scope list here would state a request that was never made: on a refused
+				// run it read "agent.invoke task.read" while Okta was refusing
+				// task.dispatch, which is precisely the kind of claim this app must not
+				// make. The tool name is reported instead, and the scopes appear where
+				// they are actually known: in Okta's refusal, and in the MCP server's
+				// account of the token it received.
 				Note: "Bifrost exchanges the caller's token for an ID-JAG at the org " +
 					"authorization server, redeems it at the target's, and injects the " +
 					"result upstream. That delegated token never passes through this app, " +

@@ -11,9 +11,15 @@
 <header class="masthead">
   <h1>Sentinel chain of custody</h1>
   <p class="thesis">
-    Okta is the policy decision point. A gateway is only the enforcement point.
-    There is no gateway in this page: every outcome below came straight from Okta, and
-    every refusal is Okta&rsquo;s own wording.
+    <strong>Okta is the policy decision point. Bifrost is only the enforcement point.</strong>
+    Every outcome below is Okta&rsquo;s decision, and every refusal is Okta&rsquo;s own
+    wording. The gateway holds no policy: it asks, on every call, and obeys the answer.
+  </p>
+  <p class="thesis">
+    Two demonstrations. <em>Through the gateway</em> makes a real MCP tool call, so you see
+    the decision being enforced where it would be in production. <em>Direct to Okta</em>
+    removes the gateway entirely, so you see the delegated token itself, decoded, with
+    nothing in the middle.
   </p>
 </header>
 
@@ -29,7 +35,9 @@
 
   <section class="controls" aria-labelledby="controls-h">
     <h2 id="controls-h" class="sr-only">Run controls</h2>
-    <button id="run" type="button" class="primary">Run the chain</button>
+    <!-- Relabelled per path at load: the gateway path makes a tool call, the direct path
+         runs the exchange. -->
+    <button id="run" type="button" class="primary">Run it</button>
     <button id="rerun" type="button" class="primary" hidden>Run again</button>
     <!-- Labelled from /api/config at load, so it names the scope it will actually ask
          for. Hidden entirely when the API offers no refusal run. -->
@@ -42,11 +50,12 @@
   <div id="verdict" aria-live="polite"></div>
 
   <section class="panel" aria-labelledby="diagram-h">
-    <h2 id="diagram-h">The chain</h2>
+    <h2 id="diagram-h">The flow</h2>
     <p class="hint">
-      Three principals, two hops, left to right. Each box says what that principal IS;
-      each arrow says what happens on that hop. Select any box or arrow to see the
-      endpoint that was called and the claims on the token it produced.
+      Left to right, in the order it happens. Each box says what that party IS; each arrow
+      says what happens on that hop. Okta is drawn <strong>beside</strong> the flow rather
+      than in it, because it is asked on every hop rather than being passed through.
+      Select any box or arrow for the endpoint that was called and what came back.
     </p>
 
     <div id="diagram-wrap">
@@ -64,7 +73,7 @@
       <li><span class="swatch idle"></span>idle, thin outline</li>
       <li><span class="swatch in_progress"></span>in progress, dashed</li>
       <li><span class="swatch issued"></span>issued, thick outline</li>
-      <li><span class="swatch refused"></span>refused by Okta, thick outline</li>
+      <li><span class="swatch refused"></span>refused, thick outline</li>
       <li><span class="swatch failed"></span>no decision reached, dash-dot</li>
       <li><span class="swatch skipped"></span>not attempted, dotted</li>
     </ul>
@@ -113,7 +122,22 @@
   </p>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<!-- D3 from the local copy first, so the diagram does not depend on reaching a CDN while
+     someone is presenting. The CDN is kept as a fallback for the case where d3.min.js is
+     not alongside this file, which would otherwise lose the diagram in a deployment that
+     did not include it.
+
+     document.write is deliberate and is the one thing that works here: the fallback has to
+     load SYNCHRONOUSLY, because app.js runs immediately after and checks for d3 at once.
+     Appending a script element instead would resolve too late and the diagram would be
+     skipped even though the CDN was reachable. If both fail, drawDiagram says so and the
+     step list carries the same information as text. -->
+<script src="d3.min.js"></script>
+<script>
+  if (typeof d3 === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"><\/script>');
+  }
+</script>
 <script src="app.js"></script>
 </body>
 </html>

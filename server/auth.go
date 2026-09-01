@@ -31,14 +31,31 @@ type Claims struct {
 	Cid string   `json:"cid"`
 	Jti string   `json:"jti"`
 	Act *Actor   `json:"act,omitempty"`
+
+	// SubProfile is Okta's sub_profile claim, which types the subject as "service" or
+	// "ai_agent". It is what makes the delegation self-describing: the token states what
+	// KIND of principal each party is, rather than leaving it to be inferred from a
+	// naming convention on the id.
+	//
+	// Not in Okta's published documentation, verified empirically against a live tenant.
+	// Treated as optional throughout for that reason: if it ever stops being emitted,
+	// output degrades to bare ids rather than breaking.
+	SubProfile string `json:"sub_profile,omitempty"`
 }
 
 // Actor is the RFC 8693 act claim. It nests: in a multi-hop chain each delegator
 // appears inside the previous one, so the full chain of custody is readable from the
 // token alone with no log correlation.
 type Actor struct {
-	Sub string `json:"sub"`
-	Act *Actor `json:"act,omitempty"`
+	Sub        string `json:"sub"`
+	SubProfile string `json:"sub_profile,omitempty"`
+	Act        *Actor `json:"act,omitempty"`
+}
+
+// principal is one party in the delegation chain, with the type Okta assigned it.
+type principal struct {
+	Sub     string
+	Profile string // "service", "ai_agent", or empty when absent
 }
 
 // Chain renders the delegation chain, subject first then each actor outward.
@@ -56,15 +73,38 @@ type Actor struct {
 // longer chain that genuinely revisits a principal mid-way is left alone, because
 // collapsing duplicates in general would hide a real delegation loop, which is
 // something you would want to see rather than tidy away.
-func (c *Claims) Chain() []string {
-	chain := []string{c.Sub}
+// The collapse deliberately lives here, on the raw subject, rather than in Chain below.
+// Comparing formatted strings would silently stop matching the moment anything is
+// appended to them, and the symptom would be the doubled entry quietly returning.
+func (c *Claims) Principals() []principal {
+	chain := []principal{{Sub: c.Sub, Profile: c.SubProfile}}
 	for a := c.Act; a != nil; a = a.Act {
-		chain = append(chain, a.Sub)
+		chain = append(chain, principal{Sub: a.Sub, Profile: a.SubProfile})
 	}
-	if n := len(chain); n > 1 && chain[n-1] == c.Sub {
+	if n := len(chain); n > 1 && chain[n-1].Sub == c.Sub {
 		chain = chain[:n-1]
 	}
 	return chain
+}
+
+// Chain renders the delegation chain for display, as "id (type)" where Okta stamped a
+// sub_profile and as the bare id where it did not.
+//
+// The type is the part worth reading aloud. "service" and "ai_agent" come from the token
+// itself, so the claim that one party asked and a different KIND of party acted is
+// something the credential states rather than something the audience has to take on
+// trust from the shape of an id.
+func (c *Claims) Chain() []string {
+	ps := c.Principals()
+	out := make([]string, 0, len(ps))
+	for _, p := range ps {
+		if p.Profile == "" {
+			out = append(out, p.Sub)
+			continue
+		}
+		out = append(out, fmt.Sprintf("%s (%s)", p.Sub, p.Profile))
+	}
+	return out
 }
 
 // HasScope reports whether the token carries a scope.

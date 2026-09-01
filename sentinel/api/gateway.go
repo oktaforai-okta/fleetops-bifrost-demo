@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -165,16 +166,28 @@ func runGateway(cfg *config, mode runMode, emit emitFunc) {
 		return
 	}
 
-	if result.IsError {
-		// An error that is not a relayed Okta denial. Reported as reaching no decision,
-		// because attributing it to Okta would be a guess.
+	if !result.authorized() {
+		// Reached the gateway, was not refused by it, and came back without the resource
+		// server's authorization block.
+		//
+		// This is reported as no decision rather than as a success or a denial, and the
+		// wording below is careful for a reason. An absent authorization block does NOT
+		// mean the call was unauthorized: the server emits that block only after it has
+		// validated the token AND the tool has produced output, so a tool that fails on
+		// its arguments comes back authorized but with no block. Equally it cannot be
+		// called a success, because there is no evidence the token was accepted. So the
+		// honest report is that this run shows nothing either way, with the reply verbatim.
 		ev = callEvent(stateFailed)
 		ev.Error = &oktaFailure{Description: result.Text, Source: sourceGateway}
-		ev.Detail = "The tool call failed, but the reason does not identify itself as an " +
-			"Okta decision, so it is not presented as one."
+		ev.Detail = "The gateway did not refuse this call, and the reply carries no " +
+			"authorization block, so this run is no evidence either way about the token. " +
+			"An absent block does not mean the call was unauthorized: the server writes it " +
+			"only once the tool has also produced output, so a tool that fails on its own " +
+			"arguments looks exactly like this. The reply is shown verbatim and nothing is " +
+			"inferred from it."
 		emit(ev)
 		skip(emit, stepResourceResult, "hop2", labelResourceResult, "fleet", "fleet",
-			"Not attempted: the tool call did not succeed.")
+			"Not attempted: the reply carried no authorization block to report.")
 		return
 	}
 
@@ -245,8 +258,26 @@ type toolResult struct {
 // denied reports whether this result is a refusal the gateway relayed from Okta, as
 // opposed to any other kind of failure. See gatewayDenialMarker for why this is a text
 // match and why it is deliberately conservative.
+//
+// IsError is trustworthy in this one direction: Bifrost generates its own denials and sets
+// it on them. It is NOT trustworthy in the other direction, which is what authorized()
+// exists for.
 func (r *toolResult) denied() bool {
 	return r.IsError && strings.Contains(strings.ToLower(r.Text), gatewayDenialMarker)
+}
+
+// authorized reports whether the resource server actually vouched for the token it
+// received, which it does by writing its authorization block.
+//
+// Deliberately NOT keyed on IsError. Bifrost does not propagate isError when it relays an
+// upstream tool result: the MCP server sets it, and it arrives absent. So a tool that
+// failed on its arguments comes back with no isError and no authorization block, and
+// branching on isError would render that as a successful, authorized tool call with an
+// error string sitting in the body. Keying on the block instead means the success path
+// requires positive evidence from the server rather than the absence of a flag that is not
+// reliably set.
+func (r *toolResult) authorized() bool {
+	return strings.Contains(r.Text, attributionMarker)
 }
 
 // callTool performs one MCP tools/call against Bifrost, presenting the caller token as a
@@ -325,6 +356,33 @@ func callTool(cfg *config, callerToken, tool string, args json.RawMessage) (*too
 	return &toolResult{Text: text.String(), IsError: envelope.Result.IsError}, nil
 }
 
+// loopbackHint explains the one gateway-unreachable cause that looks like something else.
+//
+// If this API runs in a container and the URL is a loopback address, that address is the
+// CONTAINER's loopback, not the host's, so a perfectly healthy Bifrost is unreachable. The
+// bare transport error then reads on a shared screen as "their gateway is down", which is
+// both wrong and the kind of thing nobody wants to debug in front of a customer. The fix
+// goes next to the symptom rather than in a README.
+//
+// Detection is by URL rather than by trying to detect a container: the URL is what is
+// actually wrong, and this text only ever appears alongside a connection that already
+// failed, so a false positive costs one unnecessary sentence and nothing else.
+func loopbackHint(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	switch u.Hostname() {
+	case "localhost", "127.0.0.1", "::1":
+		return ". If this API is running in a container, that address is the container's " +
+			"own loopback rather than the host's, so a healthy gateway on the host would " +
+			"still be unreachable. Set SENTINEL_BIFROST_URL to " +
+			"http://host.docker.internal:8080/mcp and run the container with " +
+			"--add-host=host.docker.internal:host-gateway."
+	}
+	return ""
+}
+
 // probeGateway asks the gateway for its tool list, to decide whether the gateway path can
 // be offered at all. Read-only, and short-timeout because it runs on page load.
 //
@@ -349,7 +407,7 @@ func probeGateway(cfg *config) (tools []string, reason string) {
 	resp, err := (&http.Client{Timeout: 4 * time.Second}).Do(req)
 	if err != nil {
 		return nil, "the gateway could not be reached: " +
-			maskEndpoint(err.Error(), cfg.oktaDomain, cfg.maskIDs)
+			maskEndpoint(err.Error(), cfg.oktaDomain, cfg.maskIDs) + loopbackHint(cfg.bifrostURL)
 	}
 	defer resp.Body.Close()
 
