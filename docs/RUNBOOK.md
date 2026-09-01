@@ -313,10 +313,15 @@ Three traps worth internalising.
 **The resource URLs must match byte for byte.** A hyphen where there should be a colon, a
 trailing slash, or a case difference all produce `invalid_target`.
 
-**`aud` comes from the `resource` parameter on the exchange,** not from the authorization
-server's `audiences` field. Two servers can share an `audiences` value and still issue tokens
-with completely different `aud`. The MCP server validates against the resource URL, which is
-the correct one of those two.
+**Set `FLEETOPS_AUDIENCES` to the Target's resource URL.** The issued token's `aud` is observed
+to equal the `resource` value sent on the exchange, so validating against the resource URL is
+what works.
+
+> Do **not** conclude from that observation that `resource` is what determines `aud`. Both
+> bindings here share one authorization server, so if its configured `audiences` holds the same
+> string then `resource` and `audiences` predict the same `aud` and the observation cannot tell
+> them apart. The mechanism is an open question. The operational instruction above is correct
+> either way.
 
 **The agent key never goes in `.env`.** It lives in `secrets/`, read directly by the plugin.
 A JWK pasted unquoted into an env file is destroyed the moment that file is sourced by a

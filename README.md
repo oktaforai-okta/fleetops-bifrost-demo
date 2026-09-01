@@ -211,6 +211,13 @@ derive it from the host, because `scripts/render-config.sh` independently derive
 filename from `uname -m` and the two must agree. The plugin repo's own Makefile still defaults
 to `linux/amd64`, so pass `PLATFORM` when you build from there directly.
 
+**Do not "fix" the plugin repo to derive `PLATFORM` from the host as well.** The two repos want
+different answers and both are right. Here, the build and the rendered config both run on this
+machine, so the host is the correct source. In the plugin repo the artifact has to match the
+architecture of the **Bifrost image it will be loaded into**, which is frequently not the
+machine it was built on: building on an Apple Silicon laptop for amd64 Linux is the normal
+case, and host-derivation would hand you an arm64 `.so` that cannot load there.
+
 > **The architecture mismatch has a failure mode worse than not loading.** On a clean checkout
 > the two sides disagree and the plugin simply fails to load, which is at least loud. On a
 > machine where an `.so` of the *other* architecture already exists, the build **succeeds while
