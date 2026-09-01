@@ -278,18 +278,17 @@ button.primary:disabled, button.secondary:disabled {
   opacity: .5; cursor: default; box-shadow: none;
 }
 
-/* The status line is the page reporting on itself, so it takes the plate voice
-   rather than prose: small, lettered out, and legible as a readout from across a
-   room even when it says nothing more than "not run yet". */
-.status {
-  margin: 0;
-  font-size: .82rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .1em;
-  color: var(--muted);
-}
-.status.busy { color: var(--in-progress); }
-.status.good { color: var(--issued); }
-.status.bad { color: var(--refused); }
+/* The status line stays PROSE, deliberately, and does not take the lettered-out plate
+   voice every other label on this page uses. It looks like a short label because most of
+   the time it says "Not run yet.", but app.js also routes real failures through it, and
+   those carry a URL: "Could not reach the API at http://localhost:8080/api". Uppercasing
+   that renders a path in the wrong case, which someone reading it off a projector or
+   retyping it would get wrong, and tracking out a two line error sentence makes it slower
+   to read at exactly the moment reading speed matters. */
+.status { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+.status.busy { color: var(--in-progress); font-weight: 600; }
+.status.good { color: var(--issued); font-weight: 600; }
+.status.bad { color: var(--refused); font-weight: 600; }
 
 /* ---------------------------------------------------------------------- path chooser */
 
@@ -326,7 +325,10 @@ button.primary:disabled, button.secondary:disabled {
   box-shadow: var(--shadow-card);
 }
 .path-button:disabled { opacity: .6; cursor: default; box-shadow: none; }
-.path-name { font-size: .95rem; font-weight: 700; letter-spacing: -0.01em; }
+/* Left at its original size. Quieting the chooser is done with the rail and the fill, not
+   by shrinking the one line that names the demonstration: on this page legibility from the
+   back of a room outranks hierarchy, and type size is the wrong lever for the latter. */
+.path-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
 .path-note { font-size: .85rem; color: var(--muted); }
 
 /* -------------------------------------------------------------------------- verdict */
@@ -360,7 +362,11 @@ button.primary:disabled, button.secondary:disabled {
    ============================================================================== */
 .verdict {
   max-width: 1240px; margin: 0 auto 1.1rem;
-  border: 2px solid var(--border-strong);
+  /* 1px on three sides, 9px on top. An earlier pass used 2px on the three sides, which
+     made the top read as the heavy edge of a uniform frame rather than as a banner. At 1px
+     the banner is unambiguous, and the plate is still bounded on the other three sides
+     because its tint is lighter than the chassis and the lift shadow closes it. */
+  border: 1px solid var(--border-strong);
   border-top-width: 9px;
   border-radius: 0;
   padding: 1.15rem 1.45rem 1.35rem;
@@ -397,9 +403,13 @@ button.primary:disabled, button.secondary:disabled {
   line-height: 1.02;
   letter-spacing: .005em;
 }
+/* No font-size here, deliberately. The body is 18px but the root is 16px, so every rem in
+   this file is 16px based: a "1.05rem" here would have quietly set this paragraph to
+   16.8px, below the 18px floor the whole page is built on, and this is prose inside the
+   most important element on the page. It inherits 18px instead. */
 .verdict-sub {
   margin: .55rem 0 0; max-width: 84ch; color: var(--ink);
-  font-size: 1.05rem; line-height: 1.5;
+  line-height: 1.5;
 }
 
 .verdict-issued { border-color: var(--issued); background: var(--issued-fill); }
@@ -421,7 +431,7 @@ button.primary:disabled, button.secondary:disabled {
   margin: 1.15rem 0 .55rem;
   padding-top: .95rem;
   border-top: 2px solid var(--border-strong);
-  font-size: .8rem; font-weight: 700;
+  font-size: .82rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .12em; color: var(--muted);
 }
 /* Below the seam: a lit face, because this is the evidence you look at, with a
@@ -461,6 +471,25 @@ button.primary:disabled, button.secondary:disabled {
   overflow-wrap: anywhere; line-height: 1.5;
 }
 
+/* WHEN THE DESCRIPTION IS THE WHOLE QUOTE, IT IS THE HEADLINE OF THE EVIDENCE.
+   app.js splits a refusal into error and error_description, and sizes above assume both:
+   the short code loud, the sentence under it quieter. The GATEWAY path, which is the path
+   this demo actually runs, returns no separate code. Everything arrives in one string:
+     Tool execution failed: okta denied "..." on "...": id-jag exchange: invalid_scope: The
+     following scopes are not allowed for this request: [task.dispatch]. (HTTP 400)
+   With only the description present, the single most important sentence on the page was
+   left at the smallest size in the plate, which is the wrong way round on a page whose one
+   job is to make a refusal undeniable. So when it stands alone it takes the weight the
+   code would have had.
+   :only-child rather than :has(), because the description is a direct child of the quote
+   and app.js appends nothing else in that case. It also fails safe: where the selector
+   does not apply the text is merely back to 1.05rem, never missing. */
+.verdict-quote .verdict-desc:only-child {
+  font-size: clamp(1.15rem, 1.9vw, 1.6rem);
+  line-height: 1.45;
+  margin-top: 0;
+}
+
 /* On a narrow screen the plate's inset costs the headline a word per line, and the headline
    is the whole point of the plate. The rails stay exactly as they are: they are the thing
    that says which determination this is. */
@@ -487,7 +516,7 @@ button.primary:disabled, button.secondary:disabled {
  * verdict and the diagram stay the two loudest things on the page. */
 .panel > h2 {
   margin: 0 0 .45rem;
-  font-size: .8rem; font-weight: 700;
+  font-size: .82rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .12em;
   color: var(--muted);
 }
@@ -619,7 +648,7 @@ button.primary:disabled, button.secondary:disabled {
    that one row shove its label out of the column while every other row stayed aligned.
    Do not shrink this without re-measuring against STATES in app.js. */
 .step-state {
-  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .1em; min-width: 13ch;
 }
 .step.state-idle .step-state { color: var(--idle); }
@@ -635,7 +664,7 @@ button.primary:disabled, button.secondary:disabled {
 #detail h4 { margin: 1rem 0 .35rem; font-size: .95rem; }
 #detail h5 { margin: .9rem 0 .35rem; font-size: .9rem; }
 #detail h6 {
-  margin: .9rem 0 .3rem; font-size: .8rem; font-weight: 700;
+  margin: .9rem 0 .3rem; font-size: .82rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .12em; color: var(--muted);
 }
 
@@ -692,7 +721,7 @@ button.link:hover { text-decoration-thickness: 2px; text-decoration-color: var(-
 /* .8rem rather than .7rem: 12.6px was the smallest thing on the page and this is read from
  * the back of a room. */
 .badge {
-  font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
   border: 1px solid currentColor; border-radius: var(--radius-xs); padding: .05rem .4rem;
   vertical-align: .1em; white-space: nowrap;
 }
@@ -764,7 +793,7 @@ pre.verbatim.attribution {
 .chain-card.role-actor { border-left: 6px solid var(--muted); }
 
 .chain-role {
-  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  font-size: .82rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .12em; color: var(--muted);
 }
 .chain-name { font-size: 1.25rem; font-weight: 700; margin: .2rem 0 .35rem; line-height: 1.25; }
@@ -957,14 +986,40 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
   font-size: 1.02rem;
   letter-spacing: -0.01em;
 }
-/* The prose measure, written down once. The card widths further down are derived from it,
-   so the two cannot drift apart: widen the measure and the prose cards follow.
+/* THE PROSE MEASURE, SET FROM MEASUREMENT RATHER THAN FROM A ch NUMBER THAT LOOKS RIGHT.
 
-   Set on the tab container rather than on the panel so that it reaches every descendant by
-   inheritance, including a paragraph that is not inside a panel. Note that .hint is 14px, so
-   it lands at the same CHARACTER COUNT as body prose while being narrower in pixels, which is
-   the point of measuring in ch rather than in px. */
-#tab-about, #tab-plugin, #tab-logs { --measure: 88ch; }
+   THE TRAP. ch is the width of the ZERO GLYPH, which in this stack is far wider than an
+   average prose character, so a ch number is NOT a character count. Measured on this page,
+   at 18px in this exact font stack, over 4,034 characters of the page's own prose:
+
+       1ch                         = 10.88px   (the "0" glyph)
+       average prose character     =  7.86px
+       ch overstates prose density by 1.384x
+
+   So the numbers this file used to carry were both far past readable:
+
+       88ch = 996px = 127 characters   <- what was here, and it was mine
+       62ch = 675px =  86 characters   <- what was here before that
+
+   Neither was ever 88 or 62 characters. 48ch is 522px, which at 7.86px per character is
+   66 CHARACTERS, the classic optimum, and inside the comfortable 62 to 75 band. The other
+   ends of that band, measured the same way, are 45ch for 62 characters and 54ch for 75.
+
+   ch IS STILL THE RIGHT UNIT, and the original reasoning for it holds: .hint is 14px, and
+   because ch scales with font-size, 48ch there resolves to 406px against a 6.11px average
+   character, which is 66 characters again. Same character count at a different size is
+   exactly what px could not give. The unit was fine. The number was wrong.
+
+   IT ALSO NOW DOES WORK IT PREVIOUSLY DID NOT. Above 1100px each column of a two-column
+   panel is about 579px, so the old 996px cap could never apply and the measure was inert
+   at the resolution this is actually demonstrated at. 522px binds inside a column.
+
+   ON THE DEAD SPACE THIS LEAVES. Less than it looks: of the ten explainer panels, exactly
+   ONE holds nothing but prose ("Why ask twice"), and that one gets two columns above
+   1100px. Every other panel contains a table or a log block, and those are excluded from
+   the measure and fill the card themselves, so the only slack is beside a short intro
+   paragraph above a full-width table. Cards stay full width to 1240px in all four tabs. */
+#tab-about, #tab-plugin, #tab-logs { --measure: 48ch; }
 
 #tab-about p, #tab-plugin p, #tab-logs p { margin: 0.35rem 0; max-width: var(--measure); }
 #tab-about ul, #tab-plugin ul, #tab-logs ul { max-width: var(--measure); }
@@ -984,21 +1039,21 @@ details.reference[open] > summary { margin-bottom: 0.6rem; }
    The demo tab appears in none of these selectors. Its flow diagram is the demonstration and
    is the one thing on this page that has earned all 1240px. */
 
-/* PLATES STAY FULL WIDTH, matching the demo tab and everything else on the page.
+/* PLATES STAY FULL WIDTH, IN ALL FOUR TABS. THIS IS THE USER'S DECISION, NOT A PREFERENCE.
 
    An earlier version of this file shrank these cards to fit their prose, so the empty space
    became symmetric page margin. That is defensible typography and it was the wrong call
    here: it made three of the four tabs a different width from the fourth, and a box that
    stops short of the page looks like a box that failed to load rather than like a decision.
-   Consistent edges win.
+   Consistent edges win. If this ever changes, EVERY tab changes together, demo tab
+   included, and it is a conversation before it is an edit.
 
    So the dead space is solved from the other side instead. The plates fill the width and the
-   CONTENT is what changes: prose gets a wider measure, and multi-paragraph runs go into
-   columns rather than leaving a third of the card empty. */
-
-/* Prose measure, raised from the 62ch a book would use. At this card width 62ch filled about
-   half the box. 88ch is still inside the range that reads comfortably, and it leaves far less
-   of the card empty. Tables and log blocks are unaffected: they set their own width below. */
+   CONTENT is what changes: multi-paragraph runs go into columns rather than leaving a third
+   of the card empty, and everything else in these panels is a table or a log block, which
+   fill the card on their own. What is NOT an acceptable solution is stretching the line
+   length to reach the edge, which is what the 88ch measure above used to be doing. Prose
+   is capped at 66 characters and the width is used by other means. */
 
 /* Panels holding nothing but prose put their paragraphs into two columns on a wide screen.
    This is what actually uses the width, rather than stretching a single line of text past
@@ -1061,7 +1116,7 @@ table.facts td:last-child { padding-right: 0; }
 /* The header row is a label for its column, not content, so it is lettered out and small.
    The heavier rule underneath it is the only strong line in the table. */
 table.facts thead th {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -1102,11 +1157,21 @@ table.facts strong { color: var(--ink); }
    is to COPY the address. That is why the URL is written out in full rather than hidden
    behind a button label, why it is set at .95rem rather than shrunk, and why its cell has
    real vertical padding: a comfortable triple click target. */
+/* table-layout: FIXED, and this is the load bearing part. There are two of these tables
+   stacked in the plugin tab, and under auto layout each one computes its own column widths
+   from its own content: the two row table put its addresses at about x=367 and the five row
+   table, whose first description is a full sentence, shoved them out to about x=925. Two
+   lists in the same tab with their value columns in different places reads as a mistake,
+   and it was the specific thing that got flagged on screen.
+   Fixed layout makes the first column exactly 28% in BOTH tables regardless of what is in
+   them, so the addresses start on one shared left edge and no future row can move it. The
+   cost of fixed layout is that content cannot widen its column, which is why the address
+   cell keeps overflow-wrap: anywhere below. */
 table.links {
   width: 100%;
   border-collapse: collapse;
   margin: 0.7rem 0 0.35rem;
-  table-layout: auto;
+  table-layout: fixed;
 }
 table.links td {
   vertical-align: baseline;
@@ -1116,9 +1181,16 @@ table.links td {
 /* The plate edge already opens the list. */
 table.links tr:first-child td { border-top: none; padding-top: 0.3rem; }
 
+/* 32%, measured against the actual content rather than picked. The column has to be wide
+   enough that the one long description does not tower over its own address, and narrow
+   enough that a two word description is not followed by a canyon before its value. At the
+   1195px card, 28% gave 334px and wrapped the 108 character first description to FOUR
+   lines beside a one line shell command, which is the lopsided row the auto layout was
+   flagged for in the first place. 32% is 382px and takes it to three, while still leaving
+   the longest address, 54 characters of mono, on a single line. */
 table.links td:first-child {
-  width: 31%;
-  padding-right: 1.7rem;
+  width: 32%;
+  padding-right: 1.6rem;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -1166,6 +1238,53 @@ pre.log {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, .05);
 }
 pre.log code { background: none; padding: 0; font-size: inherit; }
+
+/* ------------------------------------------------------------------------- the count */
+
+/* THE STRONGEST FACT IN THE DEMONSTRATION, and the only other place on this page where a
+   result lands. It sits under the grep command in the Fleet Ops panel and reports what that
+   command returns. The claim is not that the call was blocked at the protected system. It is
+   that the call never arrived there, and the evidence is a single digit.
+
+   DELIBERATELY NOT THE DETERMINATION PLATE. #verdict earns the 9px banner because it is a
+   live result that changes on every run and has to be seen from the back of a room the
+   instant it appears. This is a static fact, already established, printed by a command the
+   reader can run themselves. Reusing the signature here would dilute the signature AND
+   claim a liveness this line does not have. Two different kinds of object, two treatments.
+
+   WHAT DOES THE WORK INSTEAD IS RULE 2. The numeral is what the terminal printed, so it is
+   mono. The sentence around it is ours, so it is sans. The eye lands on the 0 because the
+   face, the size and the weight all change at once, which is a stronger signal than any one
+   of them alone, and it needs no colour to do it. That matters: a count in a log is not a
+   run state, and every red on this page stays reserved for a live determination. Ink only.
+
+   The left rail is the same device pre.log carries directly above, at full ink rather than
+   --border-strong, which ties the result to the command without a brittle negative margin
+   and without inventing a rail weight the page does not otherwise use. */
+.answer {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  border-left: 5px solid var(--ink);
+  padding-left: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* The digit. Mono, because the terminal printed it. */
+.answer strong {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: .95;
+}
+/* #tab-logs p sets a margin and the prose measure, and it is id scoped, so it outranks the
+   class on both. Restated here at matching specificity: this line is a result rather than
+   prose, so it is not capped at the 66 character measure, and it wants more air above it
+   than a paragraph does because it answers the block above rather than continuing it. */
+#tab-about .answer, #tab-plugin .answer, #tab-logs .answer {
+  margin: 1rem 0 .8rem;
+  max-width: none;
+}
 
 /* ------------------------------------------------------------------- reduced motion */
 
@@ -1216,7 +1335,7 @@ pre.log code { background: none; padding: 0; font-size: inherit; }
    state label on the page. */
 .action-verdict {
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   white-space: nowrap;
@@ -1398,3 +1517,39 @@ pre.log .jhi  {
 }
 #tab-plugin a.linkbutton { text-decoration: none; }
 #tab-plugin a.linkbutton:hover code { background: none; }
+
+/* ------------------------------------------------- legibility floor, in em not rem */
+
+/* THE TRAP, worth stating because it caught two of us. This file is rem based, and rem
+   resolves against the 16px ROOT, not against the 18px body. So a declaration that looks
+   like a mild increase, font-size: 1.05rem, actually renders 16.8px, which is SMALLER than
+   the body text it sits next to. The 18px body was chosen because this page is read off a
+   projector, and rem quietly opted most of the page out of that decision.
+
+   Secondary text is deliberately left alone: captions, labels, table headers, the footer and
+   the step state chips are meant to recede, and 13 to 15px is right for them. What is fixed
+   here is only the elements carrying PRIMARY reading content, or that should out-rank body
+   and were instead under it.
+   
+   em, not rem, so these track the body if the body size ever changes again. */
+
+/* A card title that named the demonstration at 16.8px, under the body it sits above. Its own
+   comment argues legibility outranks hierarchy, which the value then contradicted. */
+.path-name { font-size: 1.05em; }
+
+/* Inside the verdict, this is the quoted refusal: the single most scrutinised sentence on the
+   page. There is a :only-child rule that lifts it when it stands alone; this fixes the case
+   where it does not. */
+.verdict-desc { font-size: 1.05em; }
+
+/* table.facts carries the explanatory prose across three of the four tabs. It is the main
+   body text of those tabs and was rendering a full 2px under the real body. */
+table.facts { font-size: 1em; }
+
+/* Headings inside the explainer tabs were 16.3px, under the text they head. */
+#tab-about h3, #tab-plugin h3, #tab-logs h3 { font-size: 1.05em; }
+
+/* The sample log blocks get pointed at during a demo. The existing comment says this output
+   "can afford the extra size" and then set 0.88rem, which is 14.1px and smaller, not larger.
+   Monospace reads smaller than sans at the same size, so this is a floor rather than parity. */
+#tab-plugin pre.log, #tab-logs pre.log { font-size: .92em; }

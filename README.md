@@ -120,6 +120,20 @@ service that asked, and the agent that acted.
 | `docs/RUNBOOK.md` | The Okta setup, step by step |
 | `docs/HOW-IT-WORKS.md` | The non-developer explainer |
 | `docs/PROVING-IT.md` | How to show this is real, from Bifrost's log, the resource server's log, and Okta. Read this before demonstrating to anyone sceptical |
+| `docs/TROUBLESHOOTING.md` | Organised by symptom, because that is all you have when you arrive. Every entry is a failure that was actually hit, and most of them point somewhere other than their cause |
+| `CONTRIBUTING.md` | Layout, build and test, what must never be committed, and what support to expect |
+
+## If you are adopting this rather than running it
+
+This repo is a demonstration. The plugin is the reusable part and it lives in a sibling
+repo, which is where the adoption documentation is:
+
+| Document | For |
+|---|---|
+| [`okta-bifrost-plugin/docs/INTEGRATION.md`](https://github.com/oktaforai-okta/okta-bifrost-plugin/blob/main/docs/INTEGRATION.md) | Putting this into **your** Bifrost, in the order you will hit it, including the decisions rather than just the commands |
+| [`okta-bifrost-plugin/docs/ARCHITECTURE.md`](https://github.com/oktaforai-okta/okta-bifrost-plugin/blob/main/docs/ARCHITECTURE.md) | Reviewing or extending it. Why there are exactly two places the plugin can act |
+| [`okta-bifrost-plugin/SECURITY.md`](https://github.com/oktaforai-okta/okta-bifrost-plugin/blob/main/SECURITY.md) | Threat model, and what this does **not** protect against |
+| [`okta-bifrost-plugin/docs/PRODUCTION.md`](https://github.com/oktaforai-okta/okta-bifrost-plugin/blob/main/docs/PRODUCTION.md) | The honest distance between this demo and something you would run |
 
 The plugin lives in a **sibling repo**, because it is reusable and this demo is not. Clone
 both next to each other.
